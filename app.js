@@ -17,7 +17,7 @@ function planDeck(n,o,rnd){
  o={...OPT_DEF,...(o||{})};const d=['baskan','bombaci'],warn=[];
  [['ajanM','ajan_mavi'],['ajanK','ajan_kirmizi'],['casusM','casus_mavi'],['casusK','casus_kirmizi'],['stajyer','stajyer'],['maktul','maktul']].forEach(([k,c])=>{if(o[k])d.push(c)});
  let k=o.kumarbaz==='her'?1:0,rem=n-d.length-k;
- if(rem<0)return{error:`Seçilen karakterler (${d.length+k}) oyuncu sayısından (${n}) fazla`};
+ if(rem<0){const fz=d.length+k-n;return{error:`${n} oyuncuya ${d.length+k} özel karakter sığmaz (Başkan + Bombacı hep var${k?', Kumarbaz da var':''}; Sarhoş sayılmaz). Listeden ${fz} karakteri daha kapat.`}}
  let extra=false;const num=v=>v===''||v==null?null:Math.max(0,Math.floor(+v)||0),bs=num(o.blue),rs=num(o.red);let blue,red;
  if(bs==null&&rs==null){
   if(o.kumarbaz==='auto'&&rem%2){k=1;rem--}              // resmi kural: takımlar eşit bölünemiyorsa Kumarbaz
