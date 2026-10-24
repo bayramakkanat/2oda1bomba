@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2 Oda 1 Bomba</title><link rel="stylesheet" href="style.css"></head>
+<body><div id="app">
+<section id="home"><h1>2 Oda 1 Bomba</h1>
+<input id="nm" placeholder="Adın" maxlength="16" autocomplete="off">
+<input id="cd" placeholder="Oyun kodu (katılmak için)" maxlength="4" autocomplete="off">
+<button id="bj">Katıl</button>
+<hr><label class="sm"><input type="checkbox" id="np"> Moderatör olarak oynamayacağım</label>
+<button id="bh" class="ghost">Yeni oyun kur (moderatör)</button><p id="herr" class="sm"></p></section>
+<section id="lobby" hidden><div class="sm">OYUN KODU</div><div id="lc"></div><ul id="ll"></ul>
+<div id="hp" hidden><select id="rn"><option value="3">3 tur (ısınma)</option><option value="5" selected>5 tur</option></select>
+<button id="bd">Dağıt</button><button id="bb" class="ghost">+ Test oyuncusu</button></div>
+<p id="lh" class="sm">Moderatörün dağıtmasını bekle…</p></section>
+<section id="game" hidden>
+<div id="room"></div><div id="banner" class="sm"></div><div id="timer"></div><div id="panel" hidden></div>
+<div id="cardbox"><div class="stage" id="stage"><div class="card" id="card"><img class="face back" id="bk" alt=""><img class="face front" id="fr" alt=""><div id="cover"></div></div></div>
+<p id="hint"></p>
+<div class="btns"><button id="bc">Rengimi göster</button><button id="ba" hidden>Ajan gücü</button><button id="bs" hidden>Ayık ol</button><button id="bf" hidden>Kartımı göster</button><button id="bm" hidden>Oda değiştirdim</button></div></div>
+<div id="hostp" hidden><b>Moderatör</b><div id="hinfo"></div><div class="btns"><button id="b1">Turu başlat</button><button id="b2">Sonraki tur</button><button id="b3">Oyun bitti</button><button id="b5" class="ghost" hidden>Rehine seçimini rastgele tamamla</button><button id="b4" class="ghost">Yeni oyun</button></div></div>
+</section><div id="cs" class="sm"></div></div>
+<div id="ov"><div id="ovt"></div><div id="ovs"></div><button id="ok"></button></div>
+<dialog id="dlg"><b>Kimi inceleyeceksin?</b><div id="names"></div><button id="cx">Vazgeç</button></dialog>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="app.js"></script></body></html>
