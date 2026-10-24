@@ -2,6 +2,8 @@
 /* ---------- Saf mantık (test edilebilir) ---------- */
 const CV={ajan_mavi:.842,ajan_kirmizi:.779,casus_mavi:.787,casus_kirmizi:.809,baskan:.782,bombaci:.788,takim_mavi:.797,takim_kirmizi:.791,stajyer:.784,maktul:.784,sarhos:.81,kumarbaz:.782};
 const CV_UP=.010; // 'Rengimi göster' kapağının alt kenarını yukarı çeker (oran). Daha fazla kaldırmak için artır, indirmek için azalt; .02 üstüne çıkarsan bazı kartlarda çizim görünmeye başlar
+// Renk paylasiminda her kartin kendi seridi yerine, ayni gorunen renkteki kartlar icin AYNI sablon seridi gosterilir (cerceve, yazi konumu, serit yuksekligi gibi ayrintilar karti ele vermesin)
+const SHARE={ajan_mavi:'takim_mavi',baskan:'takim_mavi',casus_kirmizi:'takim_mavi',takim_mavi:'takim_mavi',ajan_kirmizi:'takim_kirmizi',bombaci:'takim_kirmizi',casus_mavi:'takim_kirmizi',takim_kirmizi:'takim_kirmizi',stajyer:'stajyer',maktul:'stajyer',kumarbaz:'stajyer',sarhos:'sarhos'};
 const HOST5={a:[1,1,1,1,1],b:[2,2,2,1,1],c:[3,2,2,1,1],d:[4,3,2,1,1],e:[5,4,3,2,1]};
 const MIN={5:[5,4,3,2,1],3:[3,2,1]};
 const LEADER_HOSTAGE=false;  // kural kitabı: lider rehine olarak seçilemez
@@ -19,24 +21,23 @@ function planDeck(n,o,rnd){
  [['ajanM','ajan_mavi'],['ajanK','ajan_kirmizi'],['casusM','casus_mavi'],['casusK','casus_kirmizi'],['stajyer','stajyer'],['maktul','maktul']].forEach(([k,c])=>{if(o[k])d.push(c)});
  let k=o.kumarbaz==='her'?1:0,rem=n-d.length-k;
  if(rem<0){const fz=d.length+k-n;return{error:`${n} oyuncuya ${d.length+k} özel karakter sığmaz (Başkan + Bombacı hep var${k?', Kumarbaz da var':''}; Sarhoş sayılmaz). Listeden ${fz} karakteri daha kapat.`}}
- let extra=false;const num=v=>v===''||v==null?null:Math.max(0,Math.floor(+v)||0),bs=num(o.blue),rs=num(o.red);let blue,red;
+ const num=v=>v===''||v==null?null:Math.max(0,Math.floor(+v)||0),bs=num(o.blue),rs=num(o.red);let blue,red;
  if(bs==null&&rs==null){
   if(o.kumarbaz==='auto'&&rem%2){k=1;rem--}              // resmi kural: takımlar eşit bölünemiyorsa Kumarbaz
-  if(rem%2){extra=true;rem--} // Kumarbaz teki düzeltemiyorsa (Hiç yok / Her zaman): Sarhoş fazladan denge kartı olur
+  if(rem%2)return{error:`Düz takım kartı sayısı tek (${rem}), Mavi ve Kırmızı eşit bölünemiyor. Kumarbaz'ı ${o.kumarbaz==='her'?'"Otomatik" ya da "Hiç yok"':'"Otomatik" ya da "Her zaman"'} yap veya bir yan karakteri aç/kapat.`};
   blue=red=rem/2;
  }else{ // Mavi ve Kırmızı her zaman eşit: biri girilirse diğeri aynı olur
   if(bs!=null&&rs!=null&&bs!==rs)return{error:'Mavi ve Kırmızı takım sayısı aynı olmalı'};
   blue=red=bs!=null?bs:rs;
   if(2*blue>rem)return{error:`Mavi ${blue} + Kırmızı ${red} = ${2*blue}, ama en fazla ${rem} düz takım kartı sığıyor`};
-  const left=rem-2*blue;if(left===1&&o.kumarbaz==='auto')k=1;else if(left===1)extra=true;else if(left>0)return{error:`${left} kart boşta kalıyor, takım sayısını artır`};
+  const left=rem-2*blue;if(left===1&&o.kumarbaz==='auto')k=1;else if(left>0)return{error:`${left} kart boşta kalıyor, takım sayısını artır`};
  }
  const cards=[...d,...Array(k).fill('kumarbaz'),...Array(blue).fill('takim_mavi'),...Array(red).fill('takim_kirmizi')];
  let sober;
- if(extra){cards.push('sarhos');sober=rnd&&Math.random()<.5?'takim_kirmizi':'takim_mavi'} // takımlar eşit kalsın diye Sarhoş fazladan kart olarak eklenir (Sarhoş ayarı kapalı olsa da)
- else if(o.sarhos){const plain=cards.map((c,i)=>c.startsWith('takim')?i:-1).filter(i=>i>=0);
+ if(o.sarhos){const plain=cards.map((c,i)=>c.startsWith('takim')?i:-1).filter(i=>i>=0);
   if(plain.length){const si=rnd?plain[Math.floor(Math.random()*plain.length)]:plain[0];sober=cards[si];cards[si]='sarhos'} // Sarhoş, düz bir takım kartının yerine geçer
   else warn.push('Düz takım kartı yok, Sarhoş eklenemedi')}
- return{cards,sober,blue,red,k,extra,warn}}
+ return{cards,sober,blue,red,k,warn}}
 function buildDeck(n,o){const r=planDeck(n,o,true);if(r.error)throw new Error(r.error);return{deck:shuffle(r.cards),sober:r.sober}}
 /* ---------- Arayüz ve ağ ---------- */
 const $=i=>document.getElementById(i);
@@ -66,7 +67,7 @@ function leaveToHome(text,notify){
  gen++;pg++;clearInterval(tk);clearTimeout(rt);clearTimeout(tm);clearTimeout(ct);clearTimeout(lvT);
  try{if(conn)conn.close()}catch(e){}
  setTimeout(()=>{try{if(pr)pr.destroy()}catch(e){}},notify?600:0);
- conn=null;peer=null;isHost=false;H=null;C={};me=null;code='';mode='closed';pm='closed';freshStart=false;ut=0;joined=false;joinFresh=false;lostN=0;
+ conn=null;peer=null;isHost=false;H=null;C={};me=null;code='';mode='closed';pm='closed';document.body.classList.remove('cmode');freshStart=false;ut=0;joined=false;joinFresh=false;lostN=0;
  try{localStorage.removeItem('2r1b_me');localStorage.removeItem('2r1b_host')}catch(e){}
  sel.clear();status('');$('ov').style.display='none';try{$('dlg').close()}catch(e){}
  const lv=$('lv');delete lv.dataset.arm;lv.textContent=LV0;
@@ -78,6 +79,8 @@ const room=r=>H.players.filter(p=>p.room===r);
 const byPid=id=>H.players.find(p=>p.pid===id);
 const left=()=>H.endAt?Math.max(0,Math.ceil((H.endAt-Date.now())/1000)):0;
 const need=()=>hostages(H.players.length,H.rounds)[H.round-1];
+const peekKey=p=>H.round===1?p.pid:(p.card==='sarhos'&&H.round===H.rounds?p.pid+'-s':null); // 1. tur hakkı / Sarhoş'un son tur hakkı
+const canPeek=p=>{const k=peekKey(p);return !!k&&!(H.peeks||{})[k]};
 const TIMED=['vote','round','pick','swap','gamble','gap'];
 function hostInit(resume){
  isHost=true;H=resume||{players:[],phase:'lobby',round:1,rounds:5,stage:null,endAt:0,leaders:{},votes:{},picks:{A:null,B:null},swapEnd:{},hostages:[],final:false,used:{},test:!!$('tm').checked};applyTest(H.test);
@@ -95,7 +98,7 @@ function hostMsg(c,m){
   p.conn=c;if(H.phase==='lobby')lobbyAll();else sendState(p);persist();return}
  const p=H.players.find(x=>x.conn===c);if(p)hostAct(p,m)}
 function hostAct(p,m){
- if(m.t==='peek'){if(H.round===1&&!(H.peeks=H.peeks||{})[p.pid]){H.peeks[p.pid]=1;persist()}return} // kendi kartını açma hakkı: sadece 1. turda 1 kez; sayfa yenilense de host'ta tutulur (state göndermiyoruz: açık kartı kapatmasın)
+ if(m.t==='peek'){H.peeks=H.peeks||{};const k=peekKey(p);if(k&&!H.peeks[k]){H.peeks[k]=1;persist()}return} // kendi kartını açma hakkı: 1. turda 1 kez; Sarhoş ayrıca son turda (ayık kartı için) 1 kez. Host'ta tutulur, sayfa yenilense de geri gelmez (state göndermiyoruz: açık kartı kapatmasın)
  if(m.t==='vote'){ // lider oyu: sadece oylama aşamasında, kendi odasındaki birine
   if(H.stage!=='vote'||H.leaders[p.room])return;const t=H.players.find(x=>x.name===m.target);if(!t||t.room!==p.room)return;
   H.votes[p.pid]=t.pid;if(!checkVotes()){persist();sendState(p)}return}
@@ -105,19 +108,20 @@ function hostAct(p,m){
   if(ids.length!==need()||ids.includes(null))return sendState(p);
   setPick(r,ids);return}
  if(m.t==='gamble'){if(H.stage==='gamble'&&H.gambler===p.pid&&(m.team==='mavi'||m.team==='kirmizi')){H.gChoice=m.team;persist();sendState(p)}return}
+ if(m.t==='ajanReveal'){H.reveal=H.reveal||{};if(!p.card||!p.card.startsWith('ajan')||H.reveal[p.pid]===H.round||H.used[p.pid]===H.round)return;H.reveal[p.pid]=H.round;persist();return send(p,{t:'ajanShow'})} // Ajan düğmesini getiren kaydırma: turda 1 kez (düğme kullanılmadan kapansa bile aynı turda tekrar çalışmaz). Ajan olmayana hiç yanıt dönmez
  if(m.t==='ajan'){const t=H.players.find(x=>x.name===m.target);
-  if(!p.card||!p.card.startsWith('ajan')||!t||t===p||t.room!==p.room||H.used[p.pid]===H.round)return send(p,{t:'ajanNo'});
+  if(!p.card||!p.card.startsWith('ajan')||!t||t===p||t.room!==p.room||H.used[p.pid]===H.round||(H.reveal||{})[p.pid]!==H.round)return send(p,{t:'ajanNo'});
   H.used[p.pid]=H.round;persist();send(t,{t:'ajanReq',from:p.name});send(p,{t:'ajanOk',target:t.name})}}
 function sendState(p){if(!p.card)return;const r=p.room,ld=byPid((H.leaders||{})[r]);
  send(p,{t:'state',card:p.card,sober:p.sober,room:r,mates:room(r).filter(x=>x!==p).map(x=>x.name),all:room(r).map(x=>x.name),
-  round:H.round,total:H.rounds,peek:H.round===1&&!(H.peeks||{})[p.pid],hostages:need(),last:H.round===H.rounds,used:H.used[p.pid]===H.round,final:H.final,
+  round:H.round,total:H.rounds,peek:canPeek(p),hostages:need(),last:H.round===H.rounds,used:H.used[p.pid]===H.round,final:H.final,
   stage:H.stage,left:left(),leader:!!ld&&ld===p,leaderName:ld?ld.name:null,myVote:(byPid((H.votes||{})[p.pid])||{}).name||null,
   picked:!!(H.picks&&H.picks[r]),hostage:H.stage==='swap'&&(H.hostages||[]).includes(p.pid),
   hleft:H.swapEnd&&H.swapEnd[r]?Math.max(0,Math.ceil((H.swapEnd[r]-Date.now())/1000)):0,
   isG:H.gambler===p.pid,gname:(byPid(H.gambler)||{}).name,gChoice:(p.pid===H.gambler||['gap','result'].includes(H.stage))?H.gChoice:null,result:H.stage==='result'?H.result:null})}
 function pushAll(){H.players.forEach(sendState);hostRender()}
 function deal(){const n=H.players.length;if(n<minPlayers())return alert('En az '+minPlayers()+' oyuncu gerekli');let r;try{r=buildDeck(n,readOpts())}catch(e){return alert(e.message)}
- H.rounds=+$('rn').value;H.round=1;H.final=false;H.used={};H.peeks={};H.phase='game';H.gambler=null;H.gChoice=null;H.result=null;
+ H.rounds=+$('rn').value;H.round=1;H.final=false;H.used={};H.peeks={};H.reveal={};H.phase='game';H.gambler=null;H.gChoice=null;H.result=null;
  const rooms=shuffle(H.players.map((_,i)=>i)),half=Math.ceil(n/2);
  H.players.forEach((p,i)=>{p.card=r.deck[i];p.sober=p.card==='sarhos'?r.sober:undefined;p.room=rooms.indexOf(i)<half?'A':'B'});
  show('game');startVote()}
@@ -166,6 +170,7 @@ function gambleDone(){if(!H.gChoice)H.gChoice=Math.random()<.5?'mavi':'kirmizi';
  H.stage='gap';H.endAt=0;clearInterval(tk);persist();pushAll()} // Kumarbaz seçti: sonuç otomatik açılmaz, moderatör 'Oyun bitti'ye basınca açılır
 function showResult(){clearInterval(tk);const pr=H.players.find(p=>p.card==='baskan'),bm=H.players.find(p=>p.card==='bombaci'),same=pr.room===bm.room,win=same?'kirmizi':'mavi';
  H.result={win,same,room:pr.room,pn:pr.name,pr:pr.room,bn:bm.name,br:bm.room,rooms:{A:room('A').map(x=>({n:x.name,c:x.card,s:x.sober})),B:room('B').map(x=>({n:x.name,c:x.card,s:x.sober}))}};
+ H.result.gray=[['stajyer','Stajyer',pr,'Başkan'],['maktul','Maktül',bm,'Bombacı']].map(([c,t,tg,tn])=>{const x=H.players.find(p=>p.card===c);return x?{t,n:x.name,room:x.room,tn,ok:x.room===tg.room}:null}).filter(Boolean); // gri karakterlerin durumu: Stajyer Başkan'la, Maktül Bombacı'yla aynı odada mı
  const g=byPid(H.gambler);if(g)H.result.g={name:g.name,choice:H.gChoice,ok:H.gChoice===win};
  H.stage='result';H.final=true;H.endAt=0;persist();pushAll()}
 function finish(){if(!['gap','ready'].includes(H.stage))return;clearInterval(tk);showResult()} // 'Oyun bitti': yalnızca tüm turlar, son rehine takası ve (varsa) Kumarbaz tahmini bittikten sonra çalışır
@@ -184,23 +189,24 @@ function onC(m){
   if(m.stage!==C.stage)sel.clear();
   C={...m,swapped:sw,endAt:Date.now()+(m.left||0)*1000,hEnd:Date.now()+(m.hleft||0)*1000};show('game');setMode('closed');draw();panel();if(m.stage==='result')setMode('full',0,'Tüm kartlar açıldı');
   $('room').textContent=m.room+' ODASI';$('banner').textContent=`Tur ${m.round}/${m.total} · Rehine sayısı: ${m.hostages}`+(m.leaderName?` · Lider: ${m.leaderName}${m.leader?' (sen)':''}`:'');
-  if(sw&&!was&&m.card==='sarhos'){vib([100,60,100]);ov('Ayıldın!','Sarhoş kartın otomatik olarak gerçek karakter kartınla değişti. Basılı tutarak yeni kartına bak.','Tamam')}}
+  if(sw&&!was&&m.card==='sarhos'){vib([100,60,100]);ov('Ayıldın!','Sarhoş kartın otomatik olarak gerçek karakter kartınla değişti. Yeni kartına bakmak için kartı '+HOLD_MS/1000+' sn basılı tut: son turda tek hakkın var.','Tamam')}}
  else if(m.t==='end'){vib([300,150,300,150,600]);ov('TUR BİTTİ',(C.leader?'Rehineleri sen seçeceksin ('+m.secs+' sn).':'Lider rehineleri seçiyor ('+m.secs+' sn).'),'Tamam')}
  else if(m.t==='over'){vib([300,150,300]);ov('OYUN BİTTİ','Son oda değişimi tamamlandı. Moderatör sonucu açıklasın.','Tamam')}
  else if(m.t==='moveNow'){vib([200,100,200,100,400]);ov('ODANI DEĞİŞTİR!','Rehine seçildin. '+m.to+' odasına geç ('+m.secs+' sn).','Tamam')}
  else if(m.t==='ajanReq'){vib([80,60,80]);ov('Ajan seni inceliyor',m.from+' kartını görmek istiyor. Yüz yüze göstermelisin.','Kartımı göster',()=>setMode('full',10000,m.from+'’a kartını göster (10 sn)'))}
  else if(m.t==='ajanOk'){C.used=true;vib(60);setMode('full',10000,m.target+' ile yüz yüze kartlarınızı gösterin (10 sn). Bu tur başka kimseyi inceleyemezsin.')}
+ else if(m.t==='ajanShow')ajanReveal();
  else if(m.t==='ajanNo'){C.used=true;draw();$('hint').textContent='Bu tur hakkını kullandın.'}
  else if(m.t==='err'){leaveToHome(m.m)}}
 function ov(t,s,b,fn){$('ovt').textContent=t;$('ovs').textContent=s;$('ok').textContent=b;$('ov').style.display='flex';$('ok').onclick=()=>{$('ov').style.display='none';fn&&fn()}}
 const faceId=()=>C.swapped?C.sober:C.card;
-function draw(){if(!C.card)return;const open=mode!=='closed',f=faceId();$('fr').src='cards/'+f+'.jpg';$('card').classList.toggle('flip',open);
+function draw(){if(!C.card)return;const open=mode!=='closed',f0=faceId(),f=(mode==='color'||(mode==='closed'&&pm==='color'))?(SHARE[f0]||f0):f0;$('fr').src='cards/'+f+'.jpg';$('card').classList.toggle('flip',open);
  const cv=$('cover');clearTimeout(ct);cv.style.height=((CV[f]-CV_UP)*100)+'%';
  if(mode==='color')cv.style.display='block';else if(pm==='color'&&mode==='closed')ct=setTimeout(()=>cv.style.display='none',450);else cv.style.display='none';
- $('ba').hidden=!C.card.startsWith('ajan');$('ba').disabled=!!C.used;
+ $('ba').hidden=!(C.card.startsWith('ajan')&&Date.now()<ajanUntil&&ajanRound===C.round);$('ba').disabled=false;
  $('bs').hidden=true;$('bf').hidden=!C.final;$('bm').hidden=true}
 let cdI=0;
-function setMode(m,ms,h){clearTimeout(tm);clearInterval(cdI);cdI=0;$('cdn').textContent='';pm=mode;mode=m;$('hint').textContent=h||(m==='closed'?hintClosed():'');draw();
+function setMode(m,ms,h){clearTimeout(tm);clearInterval(cdI);cdI=0;$('cdn').textContent='';pm=mode;mode=m;document.body.classList.toggle('cmode',m==='color');$('hint').textContent=h||(m==='closed'?hintClosed():(m==='peek'&&C.card&&C.card.startsWith('ajan')?'Ajan gücü: ekranı aşağıdan yukarı kaydır (turda 1 kez)':''));draw();
  if(m==='color'&&ms){const t0=Date.now(),upd=()=>{const n=Math.max(1,Math.ceil((ms-(Date.now()-t0))/1000));$('cdn').textContent=n;$('hint').textContent='Sadece takım rengin görünüyor — kapanmasına '+n+'…'};upd();cdI=setInterval(upd,100)} // renk: 3-2-1 geri sayım
  if(ms)tm=setTimeout(()=>setMode('closed'),ms)}
 const CN={baskan:'Başkan',bombaci:'Bombacı',ajan_mavi:'Mavi Ajan',ajan_kirmizi:'Kırmızı Ajan',casus_mavi:'Mavi Casus',casus_kirmizi:'Kırmızı Casus',stajyer:'Stajyer',maktul:'Maktül',kumarbaz:'Kumarbaz',takim_mavi:'Mavi Takım',takim_kirmizi:'Kırmızı Takım',sarhos:'Sarhoş'};
@@ -216,6 +222,7 @@ function endView(p,d){const tx=(s,c,col)=>{const e=document.createElement('div')
   tx(r.same?`Bombacı ve Başkan ${r.room} odasında, bu yüzden kazanan`:'Bombacı ve Başkan farklı odada,');
   tx(TN[r.win]+(r.same?' TAKIM':' TAKIM KAZANDI'),'win',CL[r.win]);
   tx(`Başkan: ${r.pn} (${r.pr}) · Bombacı: ${r.bn} (${r.br})`,'sm');
+  (r.gray||[]).forEach(x=>tx(`${x.t} ${x.n} (${x.room}) — ${x.tn} ile ${x.ok?'aynı odada, kazandı':'farklı odada, kaybetti'}`,'sm'));
   if(r.rooms)['A','B'].forEach(k=>{const e=document.createElement('div');e.className='sm';e.style.cssText='text-align:left;white-space:pre-line;margin-top:10px;padding:8px 10px;border:1px solid var(--mut);border-radius:10px';
    e.textContent=k+' ODASI\n'+r.rooms[k].map(x=>'• '+x.n+' — '+cardLabel(x.c,x.s)).join('\n');p.appendChild(e)});
   if(r.g)tx(`Kumarbaz ${r.g.name} ${TN[r.g.choice]} dedi — ${r.g.ok?'doğru bildi':'bilemedi'}`,'sm')}}
@@ -253,13 +260,13 @@ function buildSetup(){const g=$('sg');if(g.children.length)return;const o={...OP
  kb.value=o.kumarbaz;row('Kumarbaz (gri)',kb);
  [['blue','Düz Mavi takım kartı sayısı'],['red','Düz Kırmızı takım kartı sayısı']].forEach(([k,t])=>{const i=document.createElement('input');i.type='number';i.min=0;i.placeholder='oto';i.dataset.k=k;i.value=o[k];row(t,i)});
  const pr=document.createElement('div');pr.className='btns';
- [['Standart',{}],['Gri yok',{kumarbaz:'yok'}],['Hep Kumarbaz',{kumarbaz:'her'}],['Sade',{ajanM:false,ajanK:false,casusM:false,casusK:false,stajyer:false,maktul:false,sarhos:false}]].forEach(([t,v])=>{const b=document.createElement('button');b.className='ghost';b.textContent=t;b.onclick=()=>{setOpts({...OPT_DEF,...v});updateSum()};pr.appendChild(b)});
+ [['Standart',{}],['Gri yok',{kumarbaz:'yok',stajyer:false,maktul:false}],['Hep Kumarbaz',{kumarbaz:'her'}],['Sade',{ajanM:false,ajanK:false,casusM:false,casusK:false,stajyer:false,maktul:false,sarhos:false}]].forEach(([t,v])=>{const b=document.createElement('button');b.className='ghost';b.textContent=t;b.onclick=()=>{setOpts({...OPT_DEF,...v});updateSum()};pr.appendChild(b)});
  g.appendChild(pr);g.addEventListener('input',e=>{const k=e.target.dataset.k;if(k==='blue'||k==='red')g.querySelector('[data-k='+(k==='blue'?'red':'blue')+']').value=e.target.value; // biri girilince diğeri aynı olur
  save('2r1b_opts',readOpts());updateSum()})}
 function readOpts(){const o={};document.querySelectorAll('#sg [data-k]').forEach(e=>{o[e.dataset.k]=e.type==='checkbox'?e.checked:e.value});return o}
 function setOpts(o){document.querySelectorAll('#sg [data-k]').forEach(e=>{if(e.type==='checkbox')e.checked=!!o[e.dataset.k];else e.value=o[e.dataset.k]==null?'':o[e.dataset.k]});save('2r1b_opts',readOpts())}
 function updateSum(n){if(n==null)n=H?H.players.length:0;const r=planDeck(n,readOpts(),false),s=$('ssum');
- s.textContent=(TEST?'TEST MODU · ':'')+n+' oyuncu · '+(r.error?'⚠ '+r.error:'Mavi '+r.blue+' · Kırmızı '+r.red+(r.k?' · Kumarbaz':'')+(r.extra?' · Sarhoş (fazladan, takımlar eşit kalsın diye)':r.sober?' · Sarhoş':'')+(r.warn.length?' · ⚠ '+r.warn.join('; '):''));
+ s.textContent=(TEST?'TEST MODU · ':'')+n+' oyuncu · '+(r.error?'⚠ '+r.error:'Mavi '+r.blue+' · Kırmızı '+r.red+(r.k?' · Kumarbaz':'')+(r.sober?' · Sarhoş':'')+(r.warn.length?' · ⚠ '+r.warn.join('; '):''));
  s.style.color=r.error?'#ff6b6b':''}
 /* ----- Olaylar ----- */
 function start(isH){const name=$('nm').value.trim();if(!name)return msg('Önce adını yaz');wl();
@@ -274,7 +281,7 @@ $('bk').src='cards/back.jpg';$('cover').style.backgroundImage='url(cards/back.jp
 const HOLD_MS=3000; // kendi kartını açmak için basılı tutma süresi (ms)
 let holdT=0,holdI=0,hx=0,hy=0;const st=$('stage');
 let DEMO=false; // kart demosu açıkken true: hak sınırsız, ağ yok
-const hintClosed=()=>DEMO?'DEMO: kartı '+HOLD_MS/1000+' sn basılı tut (sınırsız)':C.peek?'Kartına bakmak için kartı '+HOLD_MS/1000+' sn basılı tut — tek hakkın var (sadece 1. turda)':'Kartını artık açamazsın. Takım rengini "Rengimi göster" ile paylaşabilirsin';
+const hintClosed=()=>DEMO?'DEMO: kartı '+HOLD_MS/1000+' sn basılı tut (sınırsız)':C.peek?'Kartına bakmak için kartı '+HOLD_MS/1000+' sn basılı tut — tek hakkın var'+(C.round===1?' (sadece 1. turda)':' (Sarhoş: ayık kartın için son tur hakkı)'):'Kartını artık açamazsın. Takım rengini "Rengimi göster" ile paylaşabilirsin';
 function holdStop(){clearTimeout(holdT);clearInterval(holdI);holdT=0;holdI=0;if(mode==='closed')$('hint').textContent=hintClosed()}
 st.addEventListener('pointerdown',e=>{wl();hx=e.clientX;hy=e.clientY;holdStop();if(mode!=='closed')return;
  if(!C.peek){vib(40);return} // hak bitti: kart açılmaz (ajan incelemesi ve 'Rengimi göster' bundan bağımsız)
@@ -286,7 +293,7 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
 $('bc').onclick=()=>{wl();vib(20);setMode('color',3000)};
 $('bf').onclick=()=>setMode('full',20000,'Kartın tamamı görünüyor (20 sn)');
 $('ba').onclick=()=>{if(C.used)return;const n=$('names');n.innerHTML='';(C.mates||[]).forEach(a=>{const b=document.createElement('button');b.textContent=a;
- b.onclick=()=>{$('dlg').close();if(DEMO){setMode('full',10000,a+' ile yüz yüze kartlarınızı gösterin (10 sn) [DEMO]');return}if(isHost)hostAct(H.players.find(p=>p.self),{t:'ajan',target:a});else conn.send({t:'ajan',target:a})};n.appendChild(b)});$('dlg').showModal()};
+ b.onclick=()=>{$('dlg').close();ajanUntil=0;draw();if(DEMO){setMode('full',10000,a+' ile yüz yüze kartlarınızı gösterin (10 sn) [DEMO]');return}if(isHost)hostAct(H.players.find(p=>p.self),{t:'ajan',target:a});else conn.send({t:'ajan',target:a})};n.appendChild(b)});$('dlg').showModal()};
 $('cx').onclick=()=>$('dlg').close();
 /* ----- Kart demosu (ana menü): oyun kurmadan kart görselini ve açılış davranışlarını dener; gerçek kart ekranının aynısıdır ----- */
 function demoLoad(card){const sw=card==='sarhos';
@@ -298,12 +305,23 @@ $('bdemo').onclick=()=>{DEMO=true;const sel=$('dsel');if(!sel.children.length)Ob
 $('dsel').onchange=()=>demoLoad($('dsel').value);
 $('dswc').onchange=()=>{C.swapped=$('dswc').checked;draw()};
 $('dreq').onclick=()=>ov('Ajan seni inceliyor','Ayşe kartını görmek istiyor. Yüz yüze göstermelisin.','Kartımı göster',()=>setMode('full',10000,'Ayşe’a kartını göster (10 sn)'));
-$('dx').onclick=()=>{DEMO=false;clearTimeout(tm);clearInterval(cdI);cdI=0;mode='closed';$('cdn').textContent='';$('card').classList.remove('flip');$('demobar').hidden=true;C={};show('home')};
+$('dx').onclick=()=>{DEMO=false;clearTimeout(tm);clearInterval(cdI);cdI=0;mode='closed';document.body.classList.remove('cmode');$('cdn').textContent='';$('card').classList.remove('flip');$('demobar').hidden=true;C={};show('home')};
 $('b5').onclick=()=>{if(H.stage==='pick'&&confirm('Rehine seçmeyen liderler için rehineler rastgele belirlensin mi?'))forcePick()};
 $('lv').onclick=()=>{const b=$('lv'),h=isHost;
  if(b.dataset.arm){clearTimeout(lvT);leaveToHome(h?'Oyun kapatıldı.':'Oyundan çıkıldı.',h)}
  else{b.dataset.arm=1;b.textContent=h?'Emin misin? Oyun HERKES için kapanır — tekrar dokun':'Emin misin? Çıkmak için tekrar dokun';lvT=setTimeout(()=>{delete b.dataset.arm;b.textContent=LV0},4000)}}; // iki dokunuşla çıkış (confirm() bazı tarayıcılarda engelli)
 window.addEventListener('error',e=>{status('Hata: '+(e.message||'bilinmiyor')+' — takılırsan "Ana ekran" düğmesine bas');if($('home').hidden)$('lv').hidden=false});
+/* ----- Ajan gücü: ekranı aşağıdan yukarı kaydırınca düğme belirir (turda 1 kez; Ajan olmayanda hiçbir şey olmaz) ----- */
+let ajanUntil=0,ajanRound=0,ajanT=0,sw0=null;
+const AJAN_BTN_MS=15000; // düğmenin ekranda kalma süresi
+function ajanReveal(){ajanUntil=Date.now()+AJAN_BTN_MS;ajanRound=C.round;clearTimeout(ajanT);ajanT=setTimeout(draw,AJAN_BTN_MS+50);vib(30);draw()}
+function swipeUp(){if(!C.card||!C.card.startsWith('ajan'))return;if(DEMO)return ajanReveal();act({t:'ajanReveal'})}
+function swipeEnd(x,y){if(!sw0)return;const dx=x-sw0.x,dy=y-sw0.y,dt=Date.now()-sw0.t;sw0=null;if(dy<-90&&Math.abs(dx)<70&&dt<800)swipeUp()}
+const gm=$('game');
+gm.addEventListener('touchstart',e=>{const t=e.changedTouches[0];sw0={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
+gm.addEventListener('touchend',e=>{const t=e.changedTouches[0];swipeEnd(t.clientX,t.clientY)},{passive:true});
+gm.addEventListener('mousedown',e=>{sw0={x:e.clientX,y:e.clientY,t:Date.now()}});
+gm.addEventListener('mouseup',e=>swipeEnd(e.clientX,e.clientY));
 /* ----- Açılışta devam ----- */
 $('net').value=(me&&me.net)||(/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname)||location.hostname==='localhost'||location.hostname.endsWith('.local')?'local':'cloud'); // PC sunucusundan açıldıysa yerel ağ önerilir
 if(me){try{$('nm').value=me.name;if(me.host){const s=LS('2r1b_host');if(s&&s.code===me.code&&s.H){code=me.code;hostInit(s.H);H.players.forEach(p=>{if(!p.self)p.conn=null})}else leaveToHome('')}else{code=me.code;connectClient()}}catch(e){leaveToHome('Kayıtlı oyun açılamadı, sıfırlandı.')}}

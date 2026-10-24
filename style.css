@@ -31,6 +31,8 @@ dialog{border-radius:14px;border:0;background:var(--card);color:var(--fg);paddin
 #sg{display:flex;flex-direction:column;gap:6px;margin:8px 0}#sg label{display:flex;justify-content:space-between;align-items:center;gap:8px}
 #sg input[type=checkbox]{width:auto}#sg input[type=number]{width:72px}#sg select{width:auto;max-width:60%}
 details#su summary{cursor:pointer;margin:6px 0}
+/* Renk paylaşımı sırasında ekrandaki diğer her şey gizlenir (örn. "Ajan gücü" düğmesi kartı ele vermesin); düzen kaymasın diye visibility kullanılır */
+body.cmode #lv,body.cmode #room,body.cmode #banner,body.cmode #timer,body.cmode #panel,body.cmode .btns,body.cmode #hostp,body.cmode #demobar,body.cmode #cs{visibility:hidden}
 #lv{align-self:flex-start;padding:6px 10px;font-size:13px;text-align:left}
 #cdn{position:absolute;top:10px;right:10px;min-width:54px;height:54px;line-height:54px;text-align:center;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:34px;font-weight:900}#cdn:empty{display:none}
 #demobar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}#demobar select{flex:1;min-width:150px}
