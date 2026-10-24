@@ -4,21 +4,37 @@ const CV={ajan_mavi:.842,ajan_kirmizi:.779,casus_mavi:.787,casus_kirmizi:.809,ba
 const HOST5={a:[1,1,1,1,1],b:[2,2,2,1,1],c:[3,2,2,1,1],d:[4,3,2,1,1],e:[5,4,3,2,1]};
 const MIN={5:[5,4,3,2,1],3:[3,2,1]};
 const LEADER_HOSTAGE=false;  // kural kitabı: lider rehine olarak seçilemez
-const SWAP_SECS=15;          // rehinelerin oda değiştirme süresi (lider seçimi bitince başlar)
-const PICK_SECS=30;          // liderin rehine seçme süresi
-const GAMBLE_SECS=10,GAP_SECS=4; // Kumarbaz tahmin süresi; tahmin mesajı ile sonuç arasındaki bekleme
-const voteSecs=r=>r===1?30:20; // lider oylama süresi: 1. tur 30 sn, sonraki turlar 20 sn
+let SWAP_SECS=15;          // rehinelerin oda değiştirme süresi (lider seçimi bitince başlar)
+let PICK_SECS=30;          // liderin rehine seçme süresi
+let GAMBLE_SECS=10,GAP_SECS=4,TEST=false;const minPlayers=()=>TEST?4:10;
+function applyTest(on){TEST=!!on;SWAP_SECS=on?5:15;PICK_SECS=on?10:30;GAMBLE_SECS=on?5:10;GAP_SECS=on?2:4} // test modu: süreler kısaltılır // Kumarbaz tahmin süresi; tahmin mesajı ile sonuç arasındaki bekleme
+const voteSecs=r=>TEST?10:(r===1?30:20); // lider oylama süresi: 1. tur 30 sn, sonraki turlar 20 sn
 function hostages(n,rounds){if(rounds===5){return HOST5[n<=10?'a':n<=13?'b':n<=17?'c':n<=21?'d':'e']}return n<=10?[1,1,1]:n<=21?[2,1,1]:[3,2,1]}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function buildDeck(n){
- const d=['baskan','bombaci','ajan_mavi','ajan_kirmizi','casus_mavi','casus_kirmizi','stajyer','maktul'];
- if(n<10)throw new Error('En az 10 oyuncu gerekli');
- if((n-d.length)%2)d.push('kumarbaz');           // resmi kural: takımlar eşit bölünemiyorsa Kumarbaz
- const k=(n-d.length)/2;for(let i=0;i<k;i++)d.push('takim_mavi','takim_kirmizi');
- const plain=d.map((c,i)=>c.startsWith('takim')?i:-1).filter(i=>i>=0);
- const si=plain[Math.floor(Math.random()*plain.length)],sober=d[si];d[si]='sarhos'; // Sarhoş, düz bir takım kartının yerine geçer
- return{deck:shuffle(d),sober};
-}
+/* Deste planlayıcı: Başkan ve Bombacı her zaman var; diğer yan karakterler açılıp kapatılabilir, Mavi/Kırmızı sayıları elle verilebilir */
+const OPT_DEF={ajanM:true,ajanK:true,casusM:true,casusK:true,stajyer:true,maktul:true,sarhos:true,kumarbaz:'auto',blue:'',red:''};
+function planDeck(n,o,rnd){
+ o={...OPT_DEF,...(o||{})};const d=['baskan','bombaci'],warn=[];
+ [['ajanM','ajan_mavi'],['ajanK','ajan_kirmizi'],['casusM','casus_mavi'],['casusK','casus_kirmizi'],['stajyer','stajyer'],['maktul','maktul']].forEach(([k,c])=>{if(o[k])d.push(c)});
+ let k=o.kumarbaz==='her'?1:0,rem=n-d.length-k;
+ if(rem<0)return{error:`Seçilen karakterler (${d.length+k}) oyuncu sayısından (${n}) fazla`};
+ const num=v=>v===''||v==null?null:Math.max(0,Math.floor(+v)||0),bs=num(o.blue),rs=num(o.red);let blue,red;
+ if(bs==null&&rs==null){
+  if(o.kumarbaz==='auto'&&rem%2){k=1;rem--}              // resmi kural: takımlar eşit bölünemiyorsa Kumarbaz
+  blue=Math.floor(rem/2);red=rem-blue;
+  if(red!==blue){warn.push(`Takımlar eşit değil (${rem} düz kart bölünemiyor)`);if(rnd&&Math.random()<.5)[blue,red]=[red,blue]}
+ }else{
+  blue=bs==null?rem-rs:bs;red=rs==null?rem-bs:rs;
+  if(blue<0||red<0)return{error:'Mavi/Kırmızı sayısı kalan kart sayısından fazla'};
+  if(blue+red!==rem)return{error:`Mavi + Kırmızı = ${blue+red}, ama ${rem} düz takım kartı gerekiyor`};
+ }
+ const cards=[...d,...Array(k).fill('kumarbaz'),...Array(blue).fill('takim_mavi'),...Array(red).fill('takim_kirmizi')];
+ let sober;
+ if(o.sarhos){const plain=cards.map((c,i)=>c.startsWith('takim')?i:-1).filter(i=>i>=0);
+  if(plain.length){const si=rnd?plain[Math.floor(Math.random()*plain.length)]:plain[0];sober=cards[si];cards[si]='sarhos'} // Sarhoş, düz bir takım kartının yerine geçer
+  else warn.push('Düz takım kartı yok, Sarhoş eklenemedi')}
+ return{cards,sober,blue,red,k,warn}}
+function buildDeck(n,o){const r=planDeck(n,o,true);if(r.error)throw new Error(r.error);return{deck:shuffle(r.cards),sober:r.sober}}
 /* ---------- Arayüz ve ağ ---------- */
 const $=i=>document.getElementById(i);
 const vib=n=>{try{navigator.vibrate&&navigator.vibrate(n)}catch(e){}};
@@ -26,12 +42,13 @@ const wl=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch
 const LS=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let peer,conn,rt,isHost=false,code='',me=LS('2r1b_me'),H=null,C={},mode='closed',pm='closed',tm=0,ct=0,tk=0;
+let NET=(me&&me.net)||'cloud'; // 'cloud' = PeerJS (internet), 'local' = PC'deki yerel sunucu (local.js)
 const sel=new Set();
 const uid=()=>Math.random().toString(36).slice(2,10);
 const show=n=>['home','lobby','game'].forEach(s=>$(s).hidden=s!==n);
 const msg=t=>{$('herr').textContent=t};
 const status=t=>{$('cs').textContent=t||''};
-function openPeer(id,cb){if(peer)try{peer.destroy()}catch(e){}peer=id?new Peer(id):new Peer();peer.on('open',cb);
+function openPeer(id,cb){if(peer)try{peer.destroy()}catch(e){}const P=NET==='local'?LocalPeer:Peer;peer=id?new P(id):new P();peer.on('open',cb);
  peer.on('error',e=>{if(isHost&&e.type==='unavailable-id'){status('Eski bağlantı temizleniyor, tekrar deneniyor…');setTimeout(()=>openPeer(id,cb),3000)}else if(!isHost&&e.type==='peer-unavailable'){msg('Oyun bulunamadı: '+code);lost()}else if(!isHost)lost();else status('Bağlantı hatası: '+e.type)})}
 /* ----- Moderatör (host) ----- */
 const persist=()=>save('2r1b_host',{code,H:{...H,players:H.players.map(({conn,...p})=>p)}});
@@ -41,7 +58,7 @@ const left=()=>H.endAt?Math.max(0,Math.ceil((H.endAt-Date.now())/1000)):0;
 const need=()=>hostages(H.players.length,H.rounds)[H.round-1];
 const TIMED=['vote','round','pick','swap','gamble','gap'];
 function hostInit(resume){
- isHost=true;H=resume||{players:[],phase:'lobby',round:1,rounds:5,stage:null,endAt:0,leaders:{},votes:{},picks:{A:null,B:null},swapEnd:{},hostages:[],final:false,used:{}};
+ isHost=true;H=resume||{players:[],phase:'lobby',round:1,rounds:5,stage:null,endAt:0,leaders:{},votes:{},picks:{A:null,B:null},swapEnd:{},hostages:[],final:false,used:{},test:!!$('tm').checked};applyTest(H.test);
  if(!resume&&me.play)H.players.push({pid:me.pid,name:me.name,self:true});
  openPeer('2r1b-'+code,()=>{status('');peer.on('connection',c=>{c.on('data',m=>hostMsg(c,m));c.on('close',()=>{const p=H.players.find(p=>p.conn===c);if(p)p.conn=null})});
   if(H.phase==='lobby')lobbyAll();else{H.players.forEach(sendState);hostRender();show('game');if(TIMED.includes(H.stage))startTick()}});
@@ -76,7 +93,7 @@ function sendState(p){if(!p.card)return;const r=p.room,ld=byPid((H.leaders||{})[
   hleft:H.swapEnd&&H.swapEnd[r]?Math.max(0,Math.ceil((H.swapEnd[r]-Date.now())/1000)):0,
   isG:H.gambler===p.pid,gname:(byPid(H.gambler)||{}).name,gChoice:(p.pid===H.gambler||['gap','result'].includes(H.stage))?H.gChoice:null,result:H.stage==='result'?H.result:null})}
 function pushAll(){H.players.forEach(sendState);hostRender()}
-function deal(){const n=H.players.length;let r;try{r=buildDeck(n)}catch(e){return alert(e.message)}
+function deal(){const n=H.players.length;if(n<minPlayers())return alert('En az '+minPlayers()+' oyuncu gerekli');let r;try{r=buildDeck(n,readOpts())}catch(e){return alert(e.message)}
  H.rounds=+$('rn').value;H.round=1;H.final=false;H.used={};H.phase='game';H.gambler=null;H.gChoice=null;H.result=null;
  const rooms=shuffle(H.players.map((_,i)=>i)),half=Math.ceil(n/2);
  H.players.forEach((p,i)=>{p.card=r.deck[i];p.sober=p.card==='sarhos'?r.sober:undefined;p.room=rooms.indexOf(i)<half?'A':'B'});
@@ -85,7 +102,7 @@ function hostRender(){const n=H.players.length,hs=need();
  $('hostp').hidden=false;$('cardbox').hidden=!me.play;
  const nm={vote:'lider oylaması',round:'tur sürüyor',pick:'rehine seçimi',swap:'oda değişimi',gamble:'Kumarbaz tahmini',gap:'Kumarbaz seçti',result:'oyun bitti',over:'tur bitti'}[H.stage]||'';
  const L=r=>(byPid((H.leaders||{})[r])||{name:'—'}).name,s=left();
- $('hinfo').textContent=`Tur ${H.round}/${H.rounds} · ${nm}`+(s?` · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:'')+` · rehine: ${hs} · oyuncu: ${n}`+(H.leaders&&(H.leaders.A||H.leaders.B)?` · Lider A: ${L('A')}, B: ${L('B')}`:'');
+ $('hinfo').textContent=(TEST?'[TEST] ':'')+`Tur ${H.round}/${H.rounds} · ${nm}`+(s?` · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:'')+` · rehine: ${hs} · oyuncu: ${n}`+(H.leaders&&(H.leaders.A||H.leaders.B)?` · Lider A: ${L('A')}, B: ${L('B')}`:'');
  $('b1').hidden=true;$('b2').hidden=true;$('b5').hidden=H.stage!=='pick';
  if(!me.play){const pn=$('panel');pn.innerHTML='';if(['gamble','gap','result'].includes(H.stage))endView(pn,{stage:H.stage,isG:false,gname:(byPid(H.gambler)||{}).name,gChoice:H.gChoice,result:H.result});pn.hidden=!pn.children.length}}
 function bcast(m){H.players.forEach(p=>send(p,m))}
@@ -104,7 +121,7 @@ function startVote(){H.stage='vote';H.leaders={};H.votes={};H.picks={A:null,B:nu
  H.players.filter(p=>p.bot).forEach(b=>{const m=room(b.room);H.votes[b.pid]=m[Math.floor(Math.random()*m.length)].pid}); // test oyuncuları rastgele oy verir
  startTick();if(!checkVotes()){persist();pushAll()}}
 function resolveVotes(){['A','B'].forEach(r=>{if(!H.leaders[r])H.leaders[r]=tally(r)});startRound()} // süre doldu: çoğunluk, yoksa/eşitse rastgele
-function startRound(){H.stage='round';H.endAt=Date.now()+MIN[H.rounds][H.round-1]*60000;persist();pushAll();startTick()}
+function startRound(){H.stage='round';H.endAt=Date.now()+(TEST?30000:MIN[H.rounds][H.round-1]*60000);persist();pushAll();startTick()}
 const sample=r=>shuffle(room(r).filter(p=>LEADER_HOSTAGE||p.pid!==H.leaders[r])).slice(0,need()).map(p=>p.pid);
 function endRound(){clearInterval(tk);const last=H.round>=H.rounds;H.picks={A:null,B:null};H.swapEnd={};H.hostages=[];H.stage='pick';H.endAt=Date.now()+PICK_SECS*1000;bcast({t:'end',last,secs:PICK_SECS});
  startTick();
@@ -134,7 +151,7 @@ function connectClient(){openPeer(null,()=>{conn=peer.connect('2r1b-'+code,{reli
  conn.on('open',()=>{status('');conn.send({t:'join',pid:me.pid,name:me.name})});conn.on('data',onC);conn.on('close',lost);conn.on('error',lost)})}
 function lost(){if(isHost)return;status('Bağlantı koptu, yeniden deneniyor…');clearTimeout(rt);rt=setTimeout(connectClient,2500)}
 function renderLobby(names){$('lc').textContent=code;$('ll').innerHTML='';names.forEach(n=>{const li=document.createElement('li');li.textContent=n;$('ll').appendChild(li)});
- $('hp').hidden=!isHost;$('lh').hidden=isHost;if(isHost)$('bd').disabled=names.length<10}
+ $('hp').hidden=!isHost;$('lh').hidden=isHost;if(isHost){buildSetup();$('bd').disabled=names.length<minPlayers();$('bb').hidden=!(H&&H.test);updateSum(names.length)}}
 function onC(m){
  if(m.t==='lobby'){C={};renderLobby(m.names);show('lobby')}
  else if(m.t==='state'){const was=C.swapped,sw=(C.swapped&&m.card===C.card)||(m.card==='sarhos'&&m.last); // Sarhoş son turda otomatik ayılır
@@ -192,10 +209,28 @@ setInterval(()=>{const T=$('timer');let st=isHost&&H?H.stage:C.stage,end=isHost&
  if(!TIMED.includes(st)||!end){T.textContent='';return}
  const s=Math.max(0,Math.ceil((end-Date.now())/1000));
  T.textContent=({vote:'Lider seçimi',round:'Kalan süre',pick:'Rehine seçimi',swap:'Oda değiştirme',gamble:'Kumarbaz tahmini',gap:'Sonuç'})[st]+' '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},250);
+/* ----- Karakter seti (moderatör, dağıtımdan önce) ----- */
+const SETUP=[['ajanM','Mavi Ajan'],['ajanK','Kırmızı Ajan'],['casusM','Mavi Casus'],['casusK','Kırmızı Casus'],['stajyer','Stajyer'],['maktul','Maktül'],['sarhos','Sarhoş']];
+function buildSetup(){const g=$('sg');if(g.children.length)return;const o={...OPT_DEF,...(LS('2r1b_opts')||{})};
+ const row=(t,el)=>{const l=document.createElement('label'),s=document.createElement('span');s.textContent=t;l.append(s,el);g.appendChild(l)};
+ SETUP.forEach(([k,t])=>{const c=document.createElement('input');c.type='checkbox';c.dataset.k=k;c.checked=!!o[k];row(t,c)});
+ const kb=document.createElement('select');kb.dataset.k='kumarbaz';
+ [['auto','Otomatik (takımlar eşit bölünemezse)'],['her','Her zaman var'],['yok','Hiç yok (gri takım yok)']].forEach(([v,t])=>{const op=document.createElement('option');op.value=v;op.textContent=t;kb.appendChild(op)});
+ kb.value=o.kumarbaz;row('Kumarbaz (gri)',kb);
+ [['blue','Düz Mavi takım kartı sayısı'],['red','Düz Kırmızı takım kartı sayısı']].forEach(([k,t])=>{const i=document.createElement('input');i.type='number';i.min=0;i.placeholder='oto';i.dataset.k=k;i.value=o[k];row(t,i)});
+ const pr=document.createElement('div');pr.className='btns';
+ [['Standart',{}],['Gri yok',{kumarbaz:'yok'}],['Hep Kumarbaz',{kumarbaz:'her'}],['Sade',{ajanM:false,ajanK:false,casusM:false,casusK:false,stajyer:false,maktul:false,sarhos:false}]].forEach(([t,v])=>{const b=document.createElement('button');b.className='ghost';b.textContent=t;b.onclick=()=>{setOpts({...OPT_DEF,...v});updateSum()};pr.appendChild(b)});
+ g.appendChild(pr);g.addEventListener('input',()=>{save('2r1b_opts',readOpts());updateSum()})}
+function readOpts(){const o={};document.querySelectorAll('#sg [data-k]').forEach(e=>{o[e.dataset.k]=e.type==='checkbox'?e.checked:e.value});return o}
+function setOpts(o){document.querySelectorAll('#sg [data-k]').forEach(e=>{if(e.type==='checkbox')e.checked=!!o[e.dataset.k];else e.value=o[e.dataset.k]==null?'':o[e.dataset.k]});save('2r1b_opts',readOpts())}
+function updateSum(n){if(n==null)n=H?H.players.length:0;const r=planDeck(n,readOpts(),false),s=$('ssum');
+ s.textContent=(TEST?'TEST MODU · ':'')+n+' oyuncu · '+(r.error?'⚠ '+r.error:'Mavi '+r.blue+' · Kırmızı '+r.red+(r.k?' · Kumarbaz':'')+(r.sober?' · Sarhoş':'')+(r.warn.length?' · ⚠ '+r.warn.join('; '):''));
+ s.style.color=r.error?'#ff6b6b':''}
 /* ----- Olaylar ----- */
 function start(isH){const name=$('nm').value.trim();if(!name)return msg('Önce adını yaz');wl();
- if(isH){code=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.floor(Math.random()*23)]).join('');me={name,pid:uid(),code,host:true,play:!$('np').checked};save('2r1b_me',me);hostInit()}
- else{code=$('cd').value.trim().toUpperCase();if(code.length!==4)return msg('4 harfli oyun kodunu yaz');me={name,pid:uid(),code,host:false,play:true};save('2r1b_me',me);connectClient()}}
+ NET=$('net').value;if(NET==='local'&&location.protocol==='https:')return msg('Yerel ağ modu için bu sayfayı PC sunucusundan aç: http://PC-IP:8080');
+ if(isH){code=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.floor(Math.random()*23)]).join('');me={name,pid:uid(),code,host:true,play:!$('np').checked,net:NET};save('2r1b_me',me);hostInit()}
+ else{code=$('cd').value.trim().toUpperCase();if(code.length!==4)return msg('4 harfli oyun kodunu yaz');me={name,pid:uid(),code,host:false,play:true,net:NET};save('2r1b_me',me);connectClient()}}
 $('bj').onclick=()=>start(false);$('bh').onclick=()=>start(true);
 $('bd').onclick=deal;$('bb').onclick=()=>{const n=H.players.length+1;H.players.push({pid:'bot'+n,name:'Test '+n,bot:true});lobbyAll()};
 $('b3').onclick=finish;$('b4').onclick=newGame;
@@ -210,4 +245,5 @@ $('ba').onclick=()=>{if(C.used)return;const n=$('names');n.innerHTML='';(C.mates
 $('cx').onclick=()=>$('dlg').close();
 $('b5').onclick=()=>{if(H.stage==='pick'&&confirm('Rehine seçmeyen liderler için rehineler rastgele belirlensin mi?'))forcePick()};
 /* ----- Açılışta devam ----- */
+$('net').value=(me&&me.net)||(/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname)||location.hostname==='localhost'||location.hostname.endsWith('.local')?'local':'cloud'); // PC sunucusundan açıldıysa yerel ağ önerilir
 if(me){$('nm').value=me.name;if(me.host){const s=LS('2r1b_host');if(s&&s.code===me.code){code=me.code;hostInit(s.H);H.players.forEach(p=>{if(!p.self)p.conn=null})}}else{code=me.code;connectClient()}}

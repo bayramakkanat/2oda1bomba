@@ -6,11 +6,14 @@
 <section id="home"><h1>2 Oda 1 Bomba</h1>
 <input id="nm" placeholder="Adın" maxlength="16" autocomplete="off">
 <input id="cd" placeholder="Oyun kodu (katılmak için)" maxlength="4" autocomplete="off">
+<label class="sm">Bağlantı <select id="net"><option value="cloud">İnternet (varsayılan)</option><option value="local">Yerel ağ (PC sunucusu, internetsiz)</option></select></label>
 <button id="bj">Katıl</button>
 <hr><label class="sm"><input type="checkbox" id="np"> Moderatör olarak oynamayacağım</label>
+<label class="sm"><input type="checkbox" id="tm"> Test modu (kısa süreler, en az 4 oyuncu, test oyuncusu ekleme)</label>
 <button id="bh" class="ghost">Yeni oyun kur (moderatör)</button><p id="herr" class="sm"></p></section>
 <section id="lobby" hidden><div class="sm">OYUN KODU</div><div id="lc"></div><ul id="ll"></ul>
-<div id="hp" hidden><select id="rn"><option value="3">3 tur (ısınma)</option><option value="5" selected>5 tur</option></select>
+<div id="hp" hidden><details id="su"><summary>Karakter seti</summary><div id="sg"></div></details><div id="ssum" class="sm"></div>
+<select id="rn"><option value="3">3 tur (ısınma)</option><option value="5" selected>5 tur</option></select>
 <button id="bd">Dağıt</button><button id="bb" class="ghost">+ Test oyuncusu</button></div>
 <p id="lh" class="sm">Moderatörün dağıtmasını bekle…</p></section>
 <section id="game" hidden>
@@ -23,4 +26,5 @@
 <div id="ov"><div id="ovt"></div><div id="ovs"></div><button id="ok"></button></div>
 <dialog id="dlg"><b>Kimi inceleyeceksin?</b><div id="names"></div><button id="cx">Vazgeç</button></dialog>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="local.js"></script>
 <script src="app.js"></script></body></html>

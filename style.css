@@ -28,3 +28,6 @@ dialog{border-radius:14px;border:0;background:var(--card);color:var(--fg);paddin
 #panel{display:flex;flex-direction:column;gap:8px}#panel .t{text-align:center;font-weight:800}
 #panel button.sel{background:#1f9d55;outline:3px solid #fc3}
 #panel .win{text-align:center;font-size:36px;font-weight:900;letter-spacing:.04em;line-height:1.15}
+#sg{display:flex;flex-direction:column;gap:6px;margin:8px 0}#sg label{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#sg input[type=checkbox]{width:auto}#sg input[type=number]{width:72px}#sg select{width:auto;max-width:60%}
+details#su summary{cursor:pointer;margin:6px 0}
