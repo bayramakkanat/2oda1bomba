@@ -3,7 +3,7 @@
 Statik bir web sitesi: derleme yok, sunucu kodu yok. GitHub'a yükle, Vercel'de "Import Project" de, ayar değiştirmeden yayınlanır (Framework: Other).
 
 ## Oynanış akışı
-1. Moderatör telefonu açar, adını yazar, **Yeni oyun kur** der. Ekranda 4 harfli kod çıkar.
+1. Moderatör telefonu açar, adını yazar, **Yeni oyun kur** der. Oyun kodunu kutuya kendisi yazabilir (en fazla 20 harf/rakam, Türkçe harfler ASCII'ye çevrilir, örn. "ŞÜKRÜ1" → "SUKRU1"); boş bırakırsa 4 harfli rastgele kod çıkar.
 2. Herkes siteyi açar, adını ve kodu yazıp **Katıl** der.
 3. Moderatör **Dağıt** der (3 veya 5 tur seçilir). Uygulama desteyi kurar, kartları ve A/B odalarını rastgele dağıtır.
 4. Kart kapalı gelir: **basılı tut** = kendi kartına bak, **Rengimi göster** = sadece alt şerit, 6 sn.

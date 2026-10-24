@@ -42,6 +42,8 @@ const wl=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch
 const LS=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let peer,conn,rt,isHost=false,code='',me=LS('2r1b_me'),H=null,C={},mode='closed',pm='closed',tm=0,ct=0,tk=0;
+let freshStart=false,ut=0; // yeni kurulan oyunda seçilen kod başkasında kullanılıyorsa hızlıca vazgeçmek için
+const normCode=s=>String(s||'').replace(/[çÇ]/g,'c').replace(/[ğĞ]/g,'g').replace(/[ıİ]/g,'i').replace(/[öÖ]/g,'o').replace(/[şŞ]/g,'s').replace(/[üÜ]/g,'u').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,20); // Türkçe harfler ASCII'ye çevrilir, sadece harf/rakam kalır
 let NET=(me&&me.net)||'cloud'; // 'cloud' = PeerJS (internet), 'local' = PC'deki yerel sunucu (local.js)
 const sel=new Set();
 const uid=()=>Math.random().toString(36).slice(2,10);
@@ -49,7 +51,7 @@ const show=n=>['home','lobby','game'].forEach(s=>$(s).hidden=s!==n);
 const msg=t=>{$('herr').textContent=t};
 const status=t=>{$('cs').textContent=t||''};
 function openPeer(id,cb){if(peer)try{peer.destroy()}catch(e){}const P=NET==='local'?LocalPeer:Peer;peer=id?new P(id):new P();peer.on('open',cb);
- peer.on('error',e=>{if(isHost&&e.type==='unavailable-id'){status('Eski bağlantı temizleniyor, tekrar deneniyor…');setTimeout(()=>openPeer(id,cb),3000)}else if(!isHost&&e.type==='peer-unavailable'){msg('Oyun bulunamadı: '+code);lost()}else if(!isHost)lost();else status('Bağlantı hatası: '+e.type)})}
+ peer.on('error',e=>{if(isHost&&e.type==='unavailable-id'){if(freshStart&&++ut>2){try{peer.destroy()}catch(x){}isHost=false;H=null;try{localStorage.removeItem('2r1b_me')}catch(x){}status('');show('home');msg('Bu kod başka bir oyunda kullanılıyor, farklı bir kod dene.');return}status('Eski bağlantı temizleniyor, tekrar deneniyor…');setTimeout(()=>openPeer(id,cb),3000)}else if(!isHost&&e.type==='peer-unavailable'){msg('Oyun bulunamadı: '+code);lost()}else if(!isHost)lost();else status('Bağlantı hatası: '+e.type)})}
 /* ----- Moderatör (host) ----- */
 const persist=()=>save('2r1b_host',{code,H:{...H,players:H.players.map(({conn,...p})=>p)}});
 const room=r=>H.players.filter(p=>p.room===r);
@@ -60,7 +62,7 @@ const TIMED=['vote','round','pick','swap','gamble','gap'];
 function hostInit(resume){
  isHost=true;H=resume||{players:[],phase:'lobby',round:1,rounds:5,stage:null,endAt:0,leaders:{},votes:{},picks:{A:null,B:null},swapEnd:{},hostages:[],final:false,used:{},test:!!$('tm').checked};applyTest(H.test);
  if(!resume&&me.play)H.players.push({pid:me.pid,name:me.name,self:true});
- openPeer('2r1b-'+code,()=>{status('');peer.on('connection',c=>{c.on('data',m=>hostMsg(c,m));c.on('close',()=>{const p=H.players.find(p=>p.conn===c);if(p)p.conn=null})});
+ openPeer('2r1b-'+code,()=>{freshStart=false;status('');peer.on('connection',c=>{c.on('data',m=>hostMsg(c,m));c.on('close',()=>{const p=H.players.find(p=>p.conn===c);if(p)p.conn=null})});
   if(H.phase==='lobby')lobbyAll();else{H.players.forEach(sendState);hostRender();show('game');if(TIMED.includes(H.stage))startTick()}});
 }
 function send(p,m){if(p.bot)return;if(p.self)onC(m);else if(p.conn&&p.conn.open)p.conn.send(m)}
@@ -229,8 +231,8 @@ function updateSum(n){if(n==null)n=H?H.players.length:0;const r=planDeck(n,readO
 /* ----- Olaylar ----- */
 function start(isH){const name=$('nm').value.trim();if(!name)return msg('Önce adını yaz');wl();
  NET=$('net').value;if(NET==='local'&&location.protocol==='https:')return msg('Yerel ağ modu için bu sayfayı PC sunucusundan aç: http://PC-IP:8080');
- if(isH){code=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.floor(Math.random()*23)]).join('');me={name,pid:uid(),code,host:true,play:!$('np').checked,net:NET};save('2r1b_me',me);hostInit()}
- else{code=$('cd').value.trim().toUpperCase();if(code.length!==4)return msg('4 harfli oyun kodunu yaz');me={name,pid:uid(),code,host:false,play:true,net:NET};save('2r1b_me',me);connectClient()}}
+ if(isH){code=normCode($('cd').value)||Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.floor(Math.random()*23)]).join('');freshStart=true;ut=0;me={name,pid:uid(),code,host:true,play:!$('np').checked,net:NET};save('2r1b_me',me);hostInit()}
+ else{code=normCode($('cd').value);if(!code)return msg('Oyun kodunu yaz');me={name,pid:uid(),code,host:false,play:true,net:NET};save('2r1b_me',me);connectClient()}}
 $('bj').onclick=()=>start(false);$('bh').onclick=()=>start(true);
 $('bd').onclick=deal;$('bb').onclick=()=>{const n=H.players.length+1;H.players.push({pid:'bot'+n,name:'Test '+n,bot:true});lobbyAll()};
 $('b3').onclick=finish;$('b4').onclick=newGame;
