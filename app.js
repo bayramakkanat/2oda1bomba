@@ -18,22 +18,24 @@ function planDeck(n,o,rnd){
  [['ajanM','ajan_mavi'],['ajanK','ajan_kirmizi'],['casusM','casus_mavi'],['casusK','casus_kirmizi'],['stajyer','stajyer'],['maktul','maktul']].forEach(([k,c])=>{if(o[k])d.push(c)});
  let k=o.kumarbaz==='her'?1:0,rem=n-d.length-k;
  if(rem<0)return{error:`Seçilen karakterler (${d.length+k}) oyuncu sayısından (${n}) fazla`};
- const num=v=>v===''||v==null?null:Math.max(0,Math.floor(+v)||0),bs=num(o.blue),rs=num(o.red);let blue,red;
+ let extra=false;const num=v=>v===''||v==null?null:Math.max(0,Math.floor(+v)||0),bs=num(o.blue),rs=num(o.red);let blue,red;
  if(bs==null&&rs==null){
   if(o.kumarbaz==='auto'&&rem%2){k=1;rem--}              // resmi kural: takımlar eşit bölünemiyorsa Kumarbaz
-  blue=Math.floor(rem/2);red=rem-blue;
-  if(red!==blue){warn.push(`Takımlar eşit değil (${rem} düz kart bölünemiyor)`);if(rnd&&Math.random()<.5)[blue,red]=[red,blue]}
- }else{
-  blue=bs==null?rem-rs:bs;red=rs==null?rem-bs:rs;
-  if(blue<0||red<0)return{error:'Mavi/Kırmızı sayısı kalan kart sayısından fazla'};
-  if(blue+red!==rem)return{error:`Mavi + Kırmızı = ${blue+red}, ama ${rem} düz takım kartı gerekiyor`};
+  if(rem%2){extra=true;rem--} // Kumarbaz teki düzeltemiyorsa (Hiç yok / Her zaman): Sarhoş fazladan denge kartı olur
+  blue=red=rem/2;
+ }else{ // Mavi ve Kırmızı her zaman eşit: biri girilirse diğeri aynı olur
+  if(bs!=null&&rs!=null&&bs!==rs)return{error:'Mavi ve Kırmızı takım sayısı aynı olmalı'};
+  blue=red=bs!=null?bs:rs;
+  if(2*blue>rem)return{error:`Mavi ${blue} + Kırmızı ${red} = ${2*blue}, ama en fazla ${rem} düz takım kartı sığıyor`};
+  const left=rem-2*blue;if(left===1&&o.kumarbaz==='auto')k=1;else if(left===1)extra=true;else if(left>0)return{error:`${left} kart boşta kalıyor, takım sayısını artır`};
  }
  const cards=[...d,...Array(k).fill('kumarbaz'),...Array(blue).fill('takim_mavi'),...Array(red).fill('takim_kirmizi')];
  let sober;
- if(o.sarhos){const plain=cards.map((c,i)=>c.startsWith('takim')?i:-1).filter(i=>i>=0);
+ if(extra){cards.push('sarhos');sober=rnd&&Math.random()<.5?'takim_kirmizi':'takim_mavi'} // takımlar eşit kalsın diye Sarhoş fazladan kart olarak eklenir (Sarhoş ayarı kapalı olsa da)
+ else if(o.sarhos){const plain=cards.map((c,i)=>c.startsWith('takim')?i:-1).filter(i=>i>=0);
   if(plain.length){const si=rnd?plain[Math.floor(Math.random()*plain.length)]:plain[0];sober=cards[si];cards[si]='sarhos'} // Sarhoş, düz bir takım kartının yerine geçer
   else warn.push('Düz takım kartı yok, Sarhoş eklenemedi')}
- return{cards,sober,blue,red,k,warn}}
+ return{cards,sober,blue,red,k,extra,warn}}
 function buildDeck(n,o){const r=planDeck(n,o,true);if(r.error)throw new Error(r.error);return{deck:shuffle(r.cards),sober:r.sober}}
 /* ---------- Arayüz ve ağ ---------- */
 const $=i=>document.getElementById(i);
@@ -213,7 +215,7 @@ setInterval(()=>{const T=$('timer');let st=isHost&&H?H.stage:C.stage,end=isHost&
  T.textContent=({vote:'Lider seçimi',round:'Kalan süre',pick:'Rehine seçimi',swap:'Oda değiştirme',gamble:'Kumarbaz tahmini',gap:'Sonuç'})[st]+' '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},250);
 /* ----- Karakter seti (moderatör, dağıtımdan önce) ----- */
 const SETUP=[['ajanM','Mavi Ajan'],['ajanK','Kırmızı Ajan'],['casusM','Mavi Casus'],['casusK','Kırmızı Casus'],['stajyer','Stajyer'],['maktul','Maktül'],['sarhos','Sarhoş']];
-function buildSetup(){const g=$('sg');if(g.children.length)return;const o={...OPT_DEF,...(LS('2r1b_opts')||{})};
+function buildSetup(){const g=$('sg');if(g.children.length)return;const o={...OPT_DEF,...(LS('2r1b_opts')||{})};if(o.blue!==o.red)o.blue=o.red=o.blue!==''?o.blue:o.red;
  const row=(t,el)=>{const l=document.createElement('label'),s=document.createElement('span');s.textContent=t;l.append(s,el);g.appendChild(l)};
  SETUP.forEach(([k,t])=>{const c=document.createElement('input');c.type='checkbox';c.dataset.k=k;c.checked=!!o[k];row(t,c)});
  const kb=document.createElement('select');kb.dataset.k='kumarbaz';
@@ -222,11 +224,12 @@ function buildSetup(){const g=$('sg');if(g.children.length)return;const o={...OP
  [['blue','Düz Mavi takım kartı sayısı'],['red','Düz Kırmızı takım kartı sayısı']].forEach(([k,t])=>{const i=document.createElement('input');i.type='number';i.min=0;i.placeholder='oto';i.dataset.k=k;i.value=o[k];row(t,i)});
  const pr=document.createElement('div');pr.className='btns';
  [['Standart',{}],['Gri yok',{kumarbaz:'yok'}],['Hep Kumarbaz',{kumarbaz:'her'}],['Sade',{ajanM:false,ajanK:false,casusM:false,casusK:false,stajyer:false,maktul:false,sarhos:false}]].forEach(([t,v])=>{const b=document.createElement('button');b.className='ghost';b.textContent=t;b.onclick=()=>{setOpts({...OPT_DEF,...v});updateSum()};pr.appendChild(b)});
- g.appendChild(pr);g.addEventListener('input',()=>{save('2r1b_opts',readOpts());updateSum()})}
+ g.appendChild(pr);g.addEventListener('input',e=>{const k=e.target.dataset.k;if(k==='blue'||k==='red')g.querySelector('[data-k='+(k==='blue'?'red':'blue')+']').value=e.target.value; // biri girilince diğeri aynı olur
+ save('2r1b_opts',readOpts());updateSum()})}
 function readOpts(){const o={};document.querySelectorAll('#sg [data-k]').forEach(e=>{o[e.dataset.k]=e.type==='checkbox'?e.checked:e.value});return o}
 function setOpts(o){document.querySelectorAll('#sg [data-k]').forEach(e=>{if(e.type==='checkbox')e.checked=!!o[e.dataset.k];else e.value=o[e.dataset.k]==null?'':o[e.dataset.k]});save('2r1b_opts',readOpts())}
 function updateSum(n){if(n==null)n=H?H.players.length:0;const r=planDeck(n,readOpts(),false),s=$('ssum');
- s.textContent=(TEST?'TEST MODU · ':'')+n+' oyuncu · '+(r.error?'⚠ '+r.error:'Mavi '+r.blue+' · Kırmızı '+r.red+(r.k?' · Kumarbaz':'')+(r.sober?' · Sarhoş':'')+(r.warn.length?' · ⚠ '+r.warn.join('; '):''));
+ s.textContent=(TEST?'TEST MODU · ':'')+n+' oyuncu · '+(r.error?'⚠ '+r.error:'Mavi '+r.blue+' · Kırmızı '+r.red+(r.k?' · Kumarbaz':'')+(r.extra?' · Sarhoş (fazladan, takımlar eşit kalsın diye)':r.sober?' · Sarhoş':'')+(r.warn.length?' · ⚠ '+r.warn.join('; '):''));
  s.style.color=r.error?'#ff6b6b':''}
 /* ----- Olaylar ----- */
 function start(isH){const name=$('nm').value.trim();if(!name)return msg('Önce adını yaz');wl();

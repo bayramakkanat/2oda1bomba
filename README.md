@@ -18,11 +18,11 @@ Statik bir web sitesi: derleme yok, sunucu kodu yok. GitHub'a yükle, Vercel'de 
 8. **Test modu** (ana menüde kutucuk): süreler kısalır (oylama 10 sn, tur 30 sn, rehine seçimi 10 sn, geçiş 5 sn), en az 4 oyuncuyla başlanır ve lobide **+ Test oyuncusu** düğmesi çıkar. Normal oyunda test oyuncusu düğmesi görünmez.
 
 ## Kurallar (uygulamada)
-Deste: Başkan, Bombacı, 2 Ajan, 2 Casus, Stajyer, Maktül + düz Mavi/Kırmızı. Mavi/Kırmızı eşit bölünemiyorsa Kumarbaz eklenir. Sarhoş, rastgele bir düz takım kartının yerine geçer; o kart "ayık" kart olur.
+Deste: Başkan, Bombacı, 2 Ajan, 2 Casus, Stajyer, Maktül + düz Mavi/Kırmızı. Mavi/Kırmızı eşit bölünemiyorsa Kumarbaz eklenir (Kumarbaz "Hiç yok" ya da "Her zaman" ise bunun yerine **Sarhoş fazladan kart olarak eklenir**; takımlar hep eşit kalır). Sarhoş, rastgele bir düz takım kartının yerine geçer; o kart "ayık" kart olur.
 Rehine tablosu resmi kural kitabından (5 turluk ve 3 turluk).
 
 ## Karakter seti (dağıtımdan önce)
-Lobide moderatör **Karakter seti** bölümünü açar: Başkan ve Bombacı her zaman vardır; Mavi/Kırmızı Ajan, Mavi/Kırmızı Casus, Stajyer, Maktül ve Sarhoş tek tek açılıp kapatılır. **Kumarbaz (gri)**: Otomatik (takımlar eşit bölünemezse eklenir) / Her zaman var / Hiç yok. Düz Mavi ve Kırmızı kart sayıları boş bırakılırsa otomatik eşit bölünür, elle girilirse toplam oyuncu sayısıyla tutmalıdır. Hemen alttaki özet satırı canlı gösterir ve uyarır. Hızlı seçimler: Standart, Gri yok, Hep Kumarbaz, Sade.
+Lobide moderatör **Karakter seti** bölümünü açar: Başkan ve Bombacı her zaman vardır; Mavi/Kırmızı Ajan, Mavi/Kırmızı Casus, Stajyer, Maktül ve Sarhoş tek tek açılıp kapatılır. **Kumarbaz (gri)**: Otomatik (takımlar eşit bölünemezse eklenir) / Her zaman var / Hiç yok. Düz Mavi ve Kırmızı kart sayıları boş bırakılırsa otomatik eşit bölünür; birine sayı yazılınca diğeri otomatik aynı sayıya eşlenir (ikisi hep eşit), kalan kart sayısıyla tutmuyorsa özet satırı uyarır. Hemen alttaki özet satırı canlı gösterir ve uyarır. Hızlı seçimler: Standart, Gri yok, Hep Kumarbaz, Sade.
 
 ## Yerel ağ (internetsiz) mod
 Ana menüde **Bağlantı: Yerel ağ (PC sunucusu)** seçilir. PC'de `yerel/YEREL-OYUN-BASLAT.bat` çalıştırılır (İLK KEZ internet gerekir: `ws` paketini indirir; Node.js kurulu olmalı). Pencerede yazılan adresi (örn. `http://192.168.1.20:8080`) telefonlar aynı Wi-Fi'da (ya da PC'nin mobil hotspot'unda) açar. Oyun dosyalarını ve mesajlaşmayı PC sunucusu üstlenir, bulut ve PeerJS gerekmez. Windows güvenlik duvarı sorarsa Özel ağlara izin ver.
