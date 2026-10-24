@@ -31,3 +31,4 @@ dialog{border-radius:14px;border:0;background:var(--card);color:var(--fg);paddin
 #sg{display:flex;flex-direction:column;gap:6px;margin:8px 0}#sg label{display:flex;justify-content:space-between;align-items:center;gap:8px}
 #sg input[type=checkbox]{width:auto}#sg input[type=number]{width:72px}#sg select{width:auto;max-width:60%}
 details#su summary{cursor:pointer;margin:6px 0}
+#lv{align-self:flex-start;padding:6px 10px;font-size:13px;text-align:left}
