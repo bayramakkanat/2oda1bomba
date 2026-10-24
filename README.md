@@ -6,7 +6,7 @@ Statik bir web sitesi: derleme yok, sunucu kodu yok. GitHub'a yükle, Vercel'de 
 1. Moderatör telefonu açar, adını yazar, **Yeni oyun kur** der. Oyun kodunu kutuya kendisi yazabilir (en fazla 20 harf/rakam, Türkçe harfler ASCII'ye çevrilir, örn. "ŞÜKRÜ1" → "SUKRU1"); boş bırakırsa 4 harfli rastgele kod çıkar.
 2. Herkes siteyi açar, adını ve kodu yazıp **Katıl** der.
 3. Moderatör **Dağıt** der (3 veya 5 tur seçilir). Uygulama desteyi kurar, kartları ve A/B odalarını rastgele dağıtır.
-4. Kart kapalı gelir: **basılı tut** = kendi kartına bak, **Rengimi göster** = sadece alt şerit, 6 sn.
+4. Kart kapalı gelir: **kartı 3 sn basılı tut** = kendi kartına bak. Bu hak **yalnızca 1. turda ve 1 kez** vardır; sonrasında 3 sn değil daha uzun basılsa da kart açılmaz (hak host'ta tutulur, sayfa yenilenince geri gelmez). Ajan incelemesi, **Rengimi göster** ve oyun sonu kart açma bu kuraldan bağımsızdır, **Rengimi göster** = sadece alt şerit, 6 sn.
 5. Ajan: **Ajan gücü** → odadaki isimlerden biri seçilir → hedefin telefonunda bildirim çıkar, ikisi de tam kartı 10 sn yüz yüze gösterir. Tur başına tek hak.
 6. **Tur akışı tamamen otomatiktir** (v0.2):
    - Her tur **lider oylamasıyla** başlar (1. tur 30 sn, sonraki turlar 20 sn). Herkes kendi odasındaki isim listesinden oy verir; oda tam oy kullanırsa lider hemen belli olur. Süre dolarsa en çok oy alan lider olur, oy yoksa/eşitse odadan rastgele biri atanır.
