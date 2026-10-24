@@ -121,16 +121,16 @@ function deal(){const n=H.players.length;if(n<minPlayers())return alert('En az '
  show('game');startVote()}
 function hostRender(){const n=H.players.length,hs=need();
  $('hostp').hidden=false;$('cardbox').hidden=!me.play;
- const nm={vote:'lider oylaması',round:'tur sürüyor',pick:'rehine seçimi',swap:'oda değişimi',gamble:'Kumarbaz tahmini',gap:'Kumarbaz seçti',result:'oyun bitti',over:'tur bitti'}[H.stage]||'';
+ const nm={vote:'lider oylaması',round:'tur sürüyor',pick:'rehine seçimi',swap:'oda değişimi',gamble:'Kumarbaz tahmini',gap:'Kumarbaz seçti',ready:'sonuç açıklanmaya hazır',result:'oyun bitti',over:'tur bitti'}[H.stage]||'';
  const L=r=>(byPid((H.leaders||{})[r])||{name:'—'}).name,s=left();
  $('hinfo').textContent=(TEST?'[TEST] ':'')+`Tur ${H.round}/${H.rounds} · ${nm}`+(s?` · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:'')+` · rehine: ${hs} · oyuncu: ${n}`+(H.leaders&&(H.leaders.A||H.leaders.B)?` · Lider A: ${L('A')}, B: ${L('B')}`:'');
- $('b1').hidden=true;$('b2').hidden=true;$('b5').hidden=H.stage!=='pick';
- if(!me.play){const pn=$('panel');pn.innerHTML='';if(['gamble','gap','result'].includes(H.stage))endView(pn,{stage:H.stage,isG:false,gname:(byPid(H.gambler)||{}).name,gChoice:H.gChoice,result:H.result});pn.hidden=!pn.children.length}}
+ $('b1').hidden=true;$('b2').hidden=true;$('b3').hidden=!['gap','ready'].includes(H.stage);$('b5').hidden=H.stage!=='pick';
+ if(!me.play){const pn=$('panel');pn.innerHTML='';if(['gamble','gap','ready','result'].includes(H.stage))endView(pn,{stage:H.stage,isG:false,gname:(byPid(H.gambler)||{}).name,gChoice:H.gChoice,result:H.result});pn.hidden=!pn.children.length}}
 function bcast(m){H.players.forEach(p=>send(p,m))}
 /* Tur akışı: lider oylaması → tur süresi → rehine seçimi (sadece lider) → oda değiştirme (15 sn) → yeni tur */
 function startTick(){clearInterval(tk);tk=setInterval(tick,500);tick()}
 function tick(){if(!H)return;
- if(H.endAt&&Date.now()>=H.endAt){if(H.stage==='vote')resolveVotes();else if(H.stage==='round')endRound();else if(H.stage==='pick')forcePick();else if(H.stage==='swap')finishSwap();else if(H.stage==='gamble')gambleDone();else if(H.stage==='gap')showResult()}
+ if(H.endAt&&Date.now()>=H.endAt){if(H.stage==='vote')resolveVotes();else if(H.stage==='round')endRound();else if(H.stage==='pick')forcePick();else if(H.stage==='swap')finishSwap();else if(H.stage==='gamble')gambleDone()}
  hostRender()}
 function tally(r){const m=room(r),c={};m.forEach(p=>{const v=H.votes[p.pid];if(v&&m.some(x=>x.pid===v))c[v]=(c[v]||0)+1});
  const mx=Math.max(0,...Object.values(c)),top=mx?m.filter(p=>c[p.pid]===mx):m;return top[Math.floor(Math.random()*top.length)].pid}
@@ -157,15 +157,16 @@ function finishSwap(){H.players.forEach(p=>{if(H.hostages.includes(p.pid))p.room
  H.hostages=[];if(H.round>=H.rounds)return endGame(); // son turun da rehine takası yapıldı
  H.round++;startVote()}
 /* Oyun sonu: (Kumarbaz varsa 10 sn tahmin) → tahmin mesajı → kartlar açılır + kazanan */
-function endGame(){const g=H.players.find(p=>p.card==='kumarbaz');if(!g)return showResult();
+function endGame(){const g=H.players.find(p=>p.card==='kumarbaz');if(!g)return readyForResult();
  H.gambler=g.pid;H.gChoice=null;H.stage='gamble';H.endAt=Date.now()+GAMBLE_SECS*1000;persist();pushAll();startTick()}
+function readyForResult(){clearInterval(tk);H.stage='ready';H.endAt=0;persist();pushAll()} // tüm turlar + rehine takası bitti, Kumarbaz yok: sonuç moderatör düğmesini bekler
 function gambleDone(){if(!H.gChoice)H.gChoice=Math.random()<.5?'mavi':'kirmizi'; // seçilmediyse rastgele
- H.stage='gap';H.endAt=Date.now()+GAP_SECS*1000;persist();pushAll()}
+ H.stage='gap';H.endAt=0;clearInterval(tk);persist();pushAll()} // Kumarbaz seçti: sonuç otomatik açılmaz, moderatör 'Oyun bitti'ye basınca açılır
 function showResult(){clearInterval(tk);const pr=H.players.find(p=>p.card==='baskan'),bm=H.players.find(p=>p.card==='bombaci'),same=pr.room===bm.room,win=same?'kirmizi':'mavi';
  H.result={win,same,room:pr.room,pn:pr.name,pr:pr.room,bn:bm.name,br:bm.room,rooms:{A:room('A').map(x=>({n:x.name,c:x.card,s:x.sober})),B:room('B').map(x=>({n:x.name,c:x.card,s:x.sober}))}};
  const g=byPid(H.gambler);if(g)H.result.g={name:g.name,choice:H.gChoice,ok:H.gChoice===win};
  H.stage='result';H.final=true;H.endAt=0;persist();pushAll()}
-function finish(){if(H.stage==='result'){H.final=true;return pushAll()}clearInterval(tk);showResult()} // 'Oyun bitti': hangi aşamada olursa olsun sonucu (oda dökümü + kazanan) herkese açar
+function finish(){if(!['gap','ready'].includes(H.stage))return;clearInterval(tk);showResult()} // 'Oyun bitti': yalnızca tüm turlar, son rehine takası ve (varsa) Kumarbaz tahmini bittikten sonra çalışır
 function newGame(){if(!confirm('Yeni oyun: kartlar yeniden dağıtılacak. Emin misin?'))return;clearInterval(tk);H.stage=null;H.endAt=0;H.leaders={};H.votes={};H.picks={A:null,B:null};H.hostages=[];H.gambler=null;H.gChoice=null;H.result=null;H.phase='lobby';H.final=false;H.players.forEach(p=>{delete p.card;delete p.room;delete p.sober});lobbyAll();$('hostp').hidden=true}
 /* ----- Oyuncu (client) ----- */
 function connectClient(){const g=++gen;openPeer(null,()=>{if(g!==gen||!me)return;conn=peer.connect('2r1b-'+code,{reliable:true});const L=()=>{if(g===gen)lost()};
@@ -204,7 +205,8 @@ function endView(p,d){const tx=(s,c,col)=>{const e=document.createElement('div')
  if(d.stage==='gamble'){
   if(d.isG){tx('KUMARBAZ — hangi takım kazanacak?');['mavi','kirmizi'].forEach(k=>{const b=document.createElement('button');b.textContent=TN[k]+' TAKIM';b.style.background=CL[k];if(d.gChoice===k)b.style.outline='4px solid #fc3';b.onclick=()=>{act({t:'gamble',team:k});C.gChoice=k;panel()};p.appendChild(b)})}
   else tx('Kumarbaz '+d.gname+' kazananı tahmin ediyor…')}
- else if(d.stage==='gap')tx('Kumarbaz '+d.gname+' '+TN[d.gChoice]+' takımı seçti','t',CL[d.gChoice]);
+ else if(d.stage==='gap'){tx('Kumarbaz '+d.gname+' '+TN[d.gChoice]+' takımı seçti','t',CL[d.gChoice]);tx('Moderatör sonucu açıklayacak…','sm')}
+ else if(d.stage==='ready')tx('Tüm turlar bitti. Moderatör sonucu açıklayacak…','t');
  else if(d.stage==='result'&&d.result){const r=d.result;
   tx(r.same?`Bombacı ve Başkan ${r.room} odasında, bu yüzden kazanan`:'Bombacı ve Başkan farklı odada,');
   tx(TN[r.win]+(r.same?' TAKIM':' TAKIM KAZANDI'),'win',CL[r.win]);
@@ -218,7 +220,7 @@ function panel(){const p=$('panel');p.innerHTML='';if(!C.card){p.hidden=true;ret
  const tx=(s,c)=>{const d=document.createElement('div');d.className=c||'sm';d.textContent=s;p.appendChild(d)};
  const bt=(s,fn,on,dis)=>{const b=document.createElement('button');b.textContent=s;if(on)b.className='sel';b.disabled=!!dis;b.onclick=fn;p.appendChild(b)};
  const nm=n=>n===me.name?n+' (sen)':n,k=C.hostages;
- if(['gamble','gap','result'].includes(C.stage)){endView(p,{stage:C.stage,isG:C.isG,gname:C.gname,gChoice:C.gChoice,result:C.result})}
+ if(['gamble','gap','ready','result'].includes(C.stage)){endView(p,{stage:C.stage,isG:C.isG,gname:C.gname,gChoice:C.gChoice,result:C.result})}
  else if(C.hostage&&['pick','swap'].includes(C.stage)){tx('ODANI DEĞİŞTİR → '+(C.room==='A'?'B':'A')+' odasına geç','t')}
  else if(C.stage==='vote'){
   if(C.leaderName)tx('Odanın lideri belli: '+C.leaderName+'. Diğer odanın oylaması bekleniyor…');
