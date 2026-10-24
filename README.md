@@ -6,7 +6,7 @@ Statik bir web sitesi: derleme yok, sunucu kodu yok. GitHub'a yükle, Vercel'de 
 1. Moderatör telefonu açar, adını yazar, **Yeni oyun kur** der. Oyun kodunu kutuya kendisi yazabilir (en fazla 20 harf/rakam, Türkçe harfler ASCII'ye çevrilir, örn. "ŞÜKRÜ1" → "SUKRU1"); boş bırakırsa 4 harfli rastgele kod çıkar.
 2. Herkes siteyi açar, adını ve kodu yazıp **Katıl** der.
 3. Moderatör **Dağıt** der (3 veya 5 tur seçilir). Uygulama desteyi kurar, kartları ve A/B odalarını rastgele dağıtır.
-4. Kart kapalı gelir: **kartı 3 sn basılı tut** = kendi kartına bak. Bu hak **yalnızca 1. turda ve 1 kez** vardır; sonrasında 3 sn değil daha uzun basılsa da kart açılmaz (hak host'ta tutulur, sayfa yenilenince geri gelmez). Ajan incelemesi, **Rengimi göster** ve oyun sonu kart açma bu kuraldan bağımsızdır, **Rengimi göster** = sadece alt şerit, 6 sn.
+4. Kart kapalı gelir: **kartı 3 sn basılı tut** = kendi kartına bak. Bu hak **yalnızca 1. turda ve 1 kez** vardır; sonrasında 3 sn değil daha uzun basılsa da kart açılmaz (hak host'ta tutulur, sayfa yenilenince geri gelmez). Ajan incelemesi, **Rengimi göster** ve oyun sonu kart açma bu kuraldan bağımsızdır, **Rengimi göster** = sadece alt şerit, 3 sn (ekranda 3-2-1 geri sayım, sonra kapanır; sınırı yok).
 5. Ajan: **Ajan gücü** → odadaki isimlerden biri seçilir → hedefin telefonunda bildirim çıkar, ikisi de tam kartı 10 sn yüz yüze gösterir. Tur başına tek hak.
 6. **Tur akışı tamamen otomatiktir** (v0.2):
    - Her tur **lider oylamasıyla** başlar (1. tur 30 sn, sonraki turlar 20 sn). Herkes kendi odasındaki isim listesinden oy verir; oda tam oy kullanırsa lider hemen belli olur. Süre dolarsa en çok oy alan lider olur, oy yoksa/eşitse odadan rastgele biri atanır.
@@ -20,6 +20,9 @@ Statik bir web sitesi: derleme yok, sunucu kodu yok. GitHub'a yükle, Vercel'de 
 ## Kurallar (uygulamada)
 Deste: Başkan, Bombacı, 2 Ajan, 2 Casus, Stajyer, Maktül + düz Mavi/Kırmızı. Mavi/Kırmızı eşit bölünemiyorsa Kumarbaz eklenir (Kumarbaz "Hiç yok" ya da "Her zaman" ise bunun yerine **Sarhoş fazladan kart olarak eklenir**; takımlar hep eşit kalır). Sarhoş, rastgele bir düz takım kartının yerine geçer; o kart "ayık" kart olur.
 Rehine tablosu resmi kural kitabından (5 turluk ve 3 turluk).
+
+## Kart demosu
+Ana menüde **Kart demosu** düğmesi: oyun kurmadan, gerçek kart ekranının aynısında tüm kartları seç, basılı tutarak aç, **Rengimi göster**, **Kartımı göster**, **Ajan gücü** ve "Ajan isteği ekranı"nı dene (Sarhoş için ayık kart kutusu var). Demoda 3 sn basılı tutma hakkı sınırsızdır, ağ bağlantısı gerekmez. Kart görseli ya da açılış davranışı değişince önizlemek için kullan.
 
 ## Karakter seti (dağıtımdan önce)
 Lobide moderatör **Karakter seti** bölümünü açar: Başkan ve Bombacı her zaman vardır; Mavi/Kırmızı Ajan, Mavi/Kırmızı Casus, Stajyer, Maktül ve Sarhoş tek tek açılıp kapatılır. **Kumarbaz (gri)**: Otomatik (takımlar eşit bölünemezse eklenir) / Her zaman var / Hiç yok. Düz Mavi ve Kırmızı kart sayıları boş bırakılırsa otomatik eşit bölünür; birine sayı yazılınca diğeri otomatik aynı sayıya eşlenir (ikisi hep eşit), kalan kart sayısıyla tutmuyorsa özet satırı uyarır. Hemen alttaki özet satırı canlı gösterir ve uyarır. Hızlı seçimler: Standart, Gri yok, Hep Kumarbaz, Sade.

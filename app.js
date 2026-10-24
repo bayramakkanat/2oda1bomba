@@ -199,7 +199,10 @@ function draw(){if(!C.card)return;const open=mode!=='closed',f=faceId();$('fr').
  if(mode==='color')cv.style.display='block';else if(pm==='color'&&mode==='closed')ct=setTimeout(()=>cv.style.display='none',450);else cv.style.display='none';
  $('ba').hidden=!C.card.startsWith('ajan');$('ba').disabled=!!C.used;
  $('bs').hidden=true;$('bf').hidden=!C.final;$('bm').hidden=true}
-function setMode(m,ms,h){clearTimeout(tm);pm=mode;mode=m;$('hint').textContent=h||(m==='closed'?hintClosed():'');draw();if(ms)tm=setTimeout(()=>setMode('closed'),ms)}
+let cdI=0;
+function setMode(m,ms,h){clearTimeout(tm);clearInterval(cdI);cdI=0;$('cdn').textContent='';pm=mode;mode=m;$('hint').textContent=h||(m==='closed'?hintClosed():'');draw();
+ if(m==='color'&&ms){const t0=Date.now(),upd=()=>{const n=Math.max(1,Math.ceil((ms-(Date.now()-t0))/1000));$('cdn').textContent=n;$('hint').textContent='Sadece takım rengin görünüyor — kapanmasına '+n+'…'};upd();cdI=setInterval(upd,100)} // renk: 3-2-1 geri sayım
+ if(ms)tm=setTimeout(()=>setMode('closed'),ms)}
 const CN={baskan:'Başkan',bombaci:'Bombacı',ajan_mavi:'Mavi Ajan',ajan_kirmizi:'Kırmızı Ajan',casus_mavi:'Mavi Casus',casus_kirmizi:'Kırmızı Casus',stajyer:'Stajyer',maktul:'Maktül',kumarbaz:'Kumarbaz',takim_mavi:'Mavi Takım',takim_kirmizi:'Kırmızı Takım',sarhos:'Sarhoş'};
 const cardLabel=(c,sober)=>c==='sarhos'&&sober?'Sarhoş (asıl kart: '+(CN[sober]||sober)+')':(CN[c]||c);
 const TN={mavi:'MAVİ',kirmizi:'KIRMIZI'},CL={mavi:'#3d7bff',kirmizi:'#ff3b3b'};
@@ -270,20 +273,32 @@ $('b3').onclick=finish;$('b4').onclick=newGame;
 $('bk').src='cards/back.jpg';$('cover').style.backgroundImage='url(cards/back.jpg)';
 const HOLD_MS=3000; // kendi kartını açmak için basılı tutma süresi (ms)
 let holdT=0,holdI=0,hx=0,hy=0;const st=$('stage');
-const hintClosed=()=>C.peek?'Kartına bakmak için kartı '+HOLD_MS/1000+' sn basılı tut — tek hakkın var (sadece 1. turda)':'Kartını artık açamazsın. Takım rengini "Rengimi göster" ile paylaşabilirsin';
+let DEMO=false; // kart demosu açıkken true: hak sınırsız, ağ yok
+const hintClosed=()=>DEMO?'DEMO: kartı '+HOLD_MS/1000+' sn basılı tut (sınırsız)':C.peek?'Kartına bakmak için kartı '+HOLD_MS/1000+' sn basılı tut — tek hakkın var (sadece 1. turda)':'Kartını artık açamazsın. Takım rengini "Rengimi göster" ile paylaşabilirsin';
 function holdStop(){clearTimeout(holdT);clearInterval(holdI);holdT=0;holdI=0;if(mode==='closed')$('hint').textContent=hintClosed()}
 st.addEventListener('pointerdown',e=>{wl();hx=e.clientX;hy=e.clientY;holdStop();if(mode!=='closed')return;
  if(!C.peek){vib(40);return} // hak bitti: kart açılmaz (ajan incelemesi ve 'Rengimi göster' bundan bağımsız)
  const t0=Date.now();holdI=setInterval(()=>{$('hint').textContent='Basılı tut… '+Math.max(1,Math.ceil((HOLD_MS-(Date.now()-t0))/1000))+' sn'},200);$('hint').textContent='Basılı tut… '+HOLD_MS/1000+' sn';
- holdT=setTimeout(()=>{clearInterval(holdI);holdI=0;holdT=0;if(mode==='closed'&&C.peek){C.peek=false;act({t:'peek'});vib(25);setMode('peek')}},HOLD_MS)});
+ holdT=setTimeout(()=>{clearInterval(holdI);holdI=0;holdT=0;if(mode==='closed'&&C.peek){C.peek=DEMO;if(!DEMO)act({t:'peek'});vib(25);setMode('peek')}},HOLD_MS)});
 st.addEventListener('pointermove',e=>{if(holdT&&Math.hypot(e.clientX-hx,e.clientY-hy)>12)holdStop()}); // parmak kayarsa/kaydırırsa açma iptal
 ['pointerup','pointerleave','pointercancel'].forEach(t=>st.addEventListener(t,()=>{holdStop();if(mode==='peek')setMode('closed')}));
 document.addEventListener('contextmenu',e=>e.preventDefault());
-$('bc').onclick=()=>{wl();vib(20);setMode('color',6000,'Sadece takım rengin görünüyor (6 sn)')};
+$('bc').onclick=()=>{wl();vib(20);setMode('color',3000)};
 $('bf').onclick=()=>setMode('full',20000,'Kartın tamamı görünüyor (20 sn)');
 $('ba').onclick=()=>{if(C.used)return;const n=$('names');n.innerHTML='';(C.mates||[]).forEach(a=>{const b=document.createElement('button');b.textContent=a;
- b.onclick=()=>{$('dlg').close();if(isHost)hostAct(H.players.find(p=>p.self),{t:'ajan',target:a});else conn.send({t:'ajan',target:a})};n.appendChild(b)});$('dlg').showModal()};
+ b.onclick=()=>{$('dlg').close();if(DEMO){setMode('full',10000,a+' ile yüz yüze kartlarınızı gösterin (10 sn) [DEMO]');return}if(isHost)hostAct(H.players.find(p=>p.self),{t:'ajan',target:a});else conn.send({t:'ajan',target:a})};n.appendChild(b)});$('dlg').showModal()};
 $('cx').onclick=()=>$('dlg').close();
+/* ----- Kart demosu (ana menü): oyun kurmadan kart görselini ve açılış davranışlarını dener; gerçek kart ekranının aynısıdır ----- */
+function demoLoad(card){const sw=card==='sarhos';
+ C={card,sober:sw?'takim_mavi':undefined,swapped:false,room:'A',peek:true,final:true,mates:['Ayşe','Mehmet','Zeynep'],all:['Ayşe','Mehmet','Zeynep']};
+ $('dsw').hidden=!sw;$('dswc').checked=false;setMode('closed')}
+$('bdemo').onclick=()=>{DEMO=true;const sel=$('dsel');if(!sel.children.length)Object.keys(CN).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=CN[k];sel.appendChild(o)});
+ $('hostp').hidden=true;$('panel').hidden=true;$('timer').textContent='';$('room').textContent='DEMO';$('banner').textContent='Gerçek kart ekranının aynısı · sınırsız deneyebilirsin';$('cardbox').hidden=false;$('demobar').hidden=false;
+ show('game');demoLoad(sel.value)};
+$('dsel').onchange=()=>demoLoad($('dsel').value);
+$('dswc').onchange=()=>{C.swapped=$('dswc').checked;draw()};
+$('dreq').onclick=()=>ov('Ajan seni inceliyor','Ayşe kartını görmek istiyor. Yüz yüze göstermelisin.','Kartımı göster',()=>setMode('full',10000,'Ayşe’a kartını göster (10 sn)'));
+$('dx').onclick=()=>{DEMO=false;clearTimeout(tm);clearInterval(cdI);cdI=0;mode='closed';$('cdn').textContent='';$('card').classList.remove('flip');$('demobar').hidden=true;C={};show('home')};
 $('b5').onclick=()=>{if(H.stage==='pick'&&confirm('Rehine seçmeyen liderler için rehineler rastgele belirlensin mi?'))forcePick()};
 $('lv').onclick=()=>{const b=$('lv'),h=isHost;
  if(b.dataset.arm){clearTimeout(lvT);leaveToHome(h?'Oyun kapatıldı.':'Oyundan çıkıldı.',h)}
