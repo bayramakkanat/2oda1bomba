@@ -65,7 +65,7 @@ function shuffle(a) {
 }
 
 /* ----- Deste Planlayıcı (Her iki takım her zaman eşit dengelenir) ----- */
-const OPT_DEF = { ajan: true, casus: true, stajyer: true, maktul: true, sarhos: true, kumarbaz: 'auto' };
+const OPT_DEF = { ajan: true, casus: true, stajyer: true, maktul: true, sarhos: true, kumarbaz: 'auto', blue: '', red: '' };
 
 function planDeck(n, o) {
   o = { ...OPT_DEF, ...(o || {}) };
@@ -87,18 +87,29 @@ function planDeck(n, o) {
     return { error: `${n} oyuncuya ${d.length + k} özel kart sığmaz. Lütfen bazı özel kartları kapatın.` };
   }
 
-  // Oyuncu sayısı tekse veya takımlar bölünemiyorsa Kumarbaz otomatik eklenir
-  if (o.kumarbaz === 'auto' && (rem % 2 !== 0)) {
-    k = 1;
-    rem--;
+  const num = v => (v === '' || v == null ? null : Math.max(0, Math.floor(+v) || 0));
+  const bs = num(o.blue), rs = num(o.red);
+  let blue, red;
+
+  if (bs == null && rs == null) {
+    // Otomatik bölüştürme: Takımlar eşit bölünemiyorsa Kumarbaz eklenir
+    if (o.kumarbaz === 'auto' && (rem % 2 !== 0)) {
+      k = 1;
+      rem--;
+    }
+    if (rem % 2 !== 0) {
+      return { error: `Düz kart sayısı tek (${rem}). Takımların eşit olması için bir gri karakteri açıp/kapatın veya Kumarbaz'ı ayarlayın.` };
+    }
+    blue = red = rem / 2;
+  } else {
+    // Elle girilmişse: Mavi ve Kırmızı her zaman eşit olmalıdır
+    blue = red = (bs != null ? bs : rs);
+    if (2 * blue > rem) return { error: `Mavi ${blue} + Kırmızı ${red} = ${2 * blue}, ama en fazla ${rem} düz kart sığıyor.` };
+    const left = rem - 2 * blue;
+    if (left === 1 && o.kumarbaz === 'auto') k = 1;
+    else if (left > 0) return { error: `${left} kart boşta kalıyor, düz takım sayılarını artırın.` };
   }
 
-  if (rem % 2 !== 0) {
-    return { error: `Düz kart sayısı tek (${rem}). Takımların eşit olması için bir gri karakteri açıp/kapatın veya Kumarbaz'ı ayarlayın.` };
-  }
-
-  const blue = rem / 2;
-  const red = rem / 2;
   const cards = [...d, ...Array(k).fill('kumarbaz'), ...Array(blue).fill('takim_mavi'), ...Array(red).fill('takim_kirmizi')];
 
   let sober = null;
@@ -351,8 +362,11 @@ function deal() {
     p.initRoom = order.indexOf(i) < half ? 'A' : 'B';
   });
 
+  H.stage = 'setup';
+  H.endAt = 0;
+  persist();
+  pushAll();
   show('game');
-  startRound(1);
 }
 
 function startRound(rNum) {
@@ -392,7 +406,9 @@ function endRound() {
 }
 
 function nextRoundEarly() {
-  if (H.stage === 'swap') {
+  if (H.stage === 'setup') {
+    startRound(1);
+  } else if (H.stage === 'swap') {
     startRound(H.round + 1);
   } else if (H.stage === 'round') {
     if (confirm('Mevcut tur süresini sonlandırıp rehine değişimine geçilsin mi?')) {
@@ -481,6 +497,7 @@ function hostRender() {
   $('cardbox').hidden = !me.play;
 
   const stageName = {
+    setup: 'Odalara Geçiş Bekleniyor',
     round: `${H.round}. Tur Devam Ediyor`,
     swap: `Rehine Geçişi (${H.round}. Tur Sonu)`,
     gamble: 'Kumarbaz Tahmin Yapıyor',
@@ -491,8 +508,14 @@ function hostRender() {
   const s = left();
   $('hinfo').textContent = (TEST ? '[TEST MODU] ' : '') + `${stageName}` + (s ? ` · Kalan: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '') + ` · Toplam Oyuncu: ${H.players.length}`;
 
-  $('bNext').hidden = !['round', 'swap'].includes(H.stage);
-  $('bNext').textContent = H.stage === 'swap' ? `Rehineler Geçti, ${H.round + 1}. Turu Başlat` : 'Turu Erken Bitir';
+  $('bNext').hidden = !['setup', 'round', 'swap'].includes(H.stage);
+  if (H.stage === 'setup') {
+    $('bNext').textContent = 'Herkes Odasında, 1. Turu Başlat';
+  } else if (H.stage === 'swap') {
+    $('bNext').textContent = `Rehineler Geçti, ${H.round + 1}. Turu Başlat`;
+  } else {
+    $('bNext').textContent = 'Turu Erken Bitir';
+  }
   $('bEnd').hidden = !['ready'].includes(H.stage);
 
   if (!me.play) {
@@ -574,6 +597,11 @@ function onC(m) {
       $('timer').textContent = 'OYUN BİTTİ';
       $('timer').className = '';
       $('banner').textContent = 'Kartlar açıldı! Salonda toplanın.';
+    } else if (m.stage === 'setup') {
+      $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
+      $('banner').textContent = `Lütfen ${m.initRoom} Odasına Geçin`;
+      $('timer').textContent = 'Odalara Geçiş Bekleniyor...';
+      $('timer').className = '';
     } else if (m.stage === 'swap') {
       $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
       $('banner').textContent = `🔔 ${m.round}. TUR BİTTİ!`;
@@ -802,7 +830,22 @@ function buildSetup() {
   kb.value = o.kumarbaz || 'auto';
   row('Kumarbaz (Gri)', kb);
 
-  g.addEventListener('input', () => {
+  [['blue', 'Düz Mavi takım sayısı'], ['red', 'Düz Kırmızı takım sayısı']].forEach(([k, t]) => {
+    const i = document.createElement('input');
+    i.type = 'number';
+    i.min = 0;
+    i.placeholder = 'oto';
+    i.dataset.k = k;
+    i.value = o[k] || '';
+    row(t, i);
+  });
+
+  g.addEventListener('input', e => {
+    const k = e.target.dataset.k;
+    if (k === 'blue' || k === 'red') {
+      const other = g.querySelector('[data-k=' + (k === 'blue' ? 'red' : 'blue') + ']');
+      if (other) other.value = e.target.value;
+    }
     save('2r1b_opts', readOpts());
     updateSum();
   });
@@ -818,11 +861,19 @@ function readOpts() {
 
 function updateSum(n) {
   if (n == null) n = H ? H.players.length : 0;
-  const r = planDeck(n, readOpts());
+  const opts = readOpts();
+  const r = planDeck(n, opts);
   const s = $('ssum');
-  s.textContent = (TEST ? 'TEST MODU · ' : '') + `${n} Oyuncu · ` +
-    (r.error ? `⚠ ${r.error}` : `Mavi: ${r.blue + (readOpts().ajan ? 1 : 0) + (readOpts().casus ? 1 : 0) + 1} · Kırmızı: ${r.red + (readOpts().ajan ? 1 : 0) + (readOpts().casus ? 1 : 0) + 1}${r.k ? ' · Kumarbaz' : ''}${r.sober ? ' · Sarhoş' : ''}`);
-  s.style.color = r.error ? '#ff6b6b' : '';
+  if (r.error) {
+    s.textContent = (TEST ? 'TEST MODU · ' : '') + `${n} Oyuncu · ⚠ ${r.error}`;
+    s.style.color = '#ff6b6b';
+  } else {
+    const totalBlue = r.blue + (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0) + 1;
+    const totalRed = r.red + (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0) + 1;
+    s.textContent = (TEST ? 'TEST MODU · ' : '') + `${n} Oyuncu · Mavi: ${totalBlue} (${r.blue} Düz) · Kırmızı: ${totalRed} (${r.red} Düz)` +
+      (r.k ? ' · Kumarbaz' : '') + (r.sober ? ' · Sarhoş' : '');
+    s.style.color = '';
+  }
 }
 
 /* ----- Giriş ve Başlatma Olayları ----- */
