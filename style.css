@@ -1,40 +1,892 @@
-:root{--bg:#eef0f4;--fg:#1b1e25;--mut:#5d6472;--btn:#2b4cc7;--card:#fff;--warn:#e65100;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root{--bg:#14161b;--fg:#eceef3;--mut:#9aa1b0;--btn:#4d6bdc;--card:#222633;--warn:#ffb74d}}
-html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
-#app{max-width:480px;margin:0 auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
-section{display:flex;flex-direction:column;gap:12px}[hidden]{display:none!important}
-h1{margin:8px 0;text-align:center}.sm{font-size:13px;color:var(--mut);text-align:center}
-.row{display:flex;gap:8px;align-items:center;justify-content:center;margin:4px 0}
-input,select,button{font:inherit;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--fg);padding:11px 12px}
-input[type=checkbox]{padding:0}
-button{background:var(--btn);color:#fff;border:0;font-weight:600;cursor:pointer}button:disabled{opacity:.4;cursor:default}
-button.ghost{background:transparent;color:var(--mut);border:1px dashed var(--mut)}
-#lc{font-size:48px;font-weight:800;letter-spacing:.2em;text-align:center}
-ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}li{background:var(--card);border-radius:8px;padding:8px 10px;font-size:14px}
-#room{text-align:center;font-weight:800;letter-spacing:.15em;font-size:20px}
-.stage{perspective:1000px;width:min(72vw,300px);aspect-ratio:442/686;margin:0 auto;touch-action:none;cursor:pointer}
-.card{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .28s cubic-bezier(.2,.8,.2,1)}.card.flip{transform:rotateY(180deg)}
-.face{position:absolute;inset:0;width:100%;height:100%;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;object-fit:cover;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-.front{transform:rotateY(180deg)}
-#cover{position:absolute;left:0;right:0;top:0;border-radius:12px 12px 0 0;background:#111 center/cover;transform:rotateY(180deg) translateZ(1px);backface-visibility:hidden;-webkit-backface-visibility:hidden;display:none;pointer-events:none}
-#hint{text-align:center;min-height:2.4em;font-size:14px;color:var(--mut);margin:6px 0}
-.btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-#hostp{border:1px solid var(--mut);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
-#hinfo{font-size:14px;color:var(--mut)}
-#ov{position:fixed;inset:0;background:rgba(10,12,18,.93);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;color:#fff;z-index:9}
-#ovt{font-size:24px;font-weight:800}#ov button{background:#d33;padding:14px 22px;font-size:16px}
-#timer{text-align:center;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;min-height:1.2em}
-#timer.swap{color:var(--warn);animation:tPulse 1.2s infinite alternate}
-@keyframes tPulse{from{transform:scale(1)}to{transform:scale(1.04)}}
-#panel{display:flex;flex-direction:column;gap:8px}#panel .t{text-align:center;font-weight:800}
-#panel button.sel{background:#1f9d55;outline:3px solid #fc3}
-#panel .win{text-align:center;font-size:36px;font-weight:900;letter-spacing:.04em;line-height:1.15}
-#sg{display:flex;flex-direction:column;gap:6px;margin:8px 0}#sg label{display:flex;justify-content:space-between;align-items:center;gap:8px}
-#sg input[type=checkbox]{width:auto}#sg input[type=number]{width:72px}#sg select{width:auto;max-width:60%}
-details#su summary{cursor:pointer;margin:6px 0}
-/* Renk veya tam kart paylaşımı sırasında ekrandaki diğer her şey gizlenir; düzen kaymasın diye visibility kullanılır */
-body.cmode #lv,body.cmode #room,body.cmode #banner,body.cmode #timer,body.cmode #panel,body.cmode .btns,body.cmode #hostp,body.cmode #demobar,body.cmode #cs{visibility:hidden}
-#lv{align-self:flex-start;padding:6px 10px;font-size:13px;text-align:left}
-#cdn{position:absolute;top:10px;right:10px;min-width:54px;height:54px;line-height:54px;text-align:center;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;font-size:34px;font-weight:900}#cdn:empty{display:none}
-#demobar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}#demobar select{flex:1;min-width:150px}
+/* ========================================================
+   2 ODA 1 BOMBA - PROFESYONEL OYUN TEMASI (CSS)
+   ======================================================== */
+
+:root {
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --bg: #0b0e14;
+  --card-bg: rgba(20, 25, 38, 0.82);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-hover: rgba(28, 36, 56, 0.9);
+
+  --fg: #f1f5f9;
+  --fg-muted: #94a3b8;
+  --fg-subtle: #64748b;
+
+  --blue: #3b82f6;
+  --blue-glow: rgba(59, 130, 246, 0.35);
+  --red: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.35);
+  --amber: #f59e0b;
+  --green: #10b981;
+
+  --btn-primary: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --btn-primary-shadow: 0 4px 16px -2px rgba(37, 99, 235, 0.45);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  overflow-x: hidden;
+}
+
+/* Arka Plan Atmosferik Işıklar */
+.ambient-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+.glow-blue {
+  width: 380px;
+  height: 380px;
+  top: -100px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, transparent 70%);
+}
+.glow-red {
+  width: 360px;
+  height: 360px;
+  bottom: -100px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.14) 0%, transparent 70%);
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 16px 18px 24px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================================
+   LOGOLAR & BAŞLIKLAR
+   ======================================================== */
+.brand {
+  text-align: center;
+  padding: 12px 0 4px;
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 18px;
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.team-blue {
+  color: var(--blue);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 16px var(--blue-glow);
+}
+
+.bomb-badge {
+  font-size: 22px;
+  animation: bombPulse 2s infinite ease-in-out;
+}
+
+@keyframes bombPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15) rotate(5deg); }
+}
+
+.team-red {
+  color: var(--red);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 16px var(--red-glow);
+}
+
+.brand-sub {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--fg-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* ========================================================
+   KART PANELLERİ (GLASSMORPHISM)
+   ======================================================== */
+.card-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.panel-secondary {
+  background: rgba(16, 20, 30, 0.6);
+  padding: 16px;
+  gap: 12px;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ========================================================
+   FORM ALANLARI & GİRDİLER
+   ======================================================== */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  color: var(--fg-subtle);
+  pointer-events: none;
+}
+
+input, select {
+  width: 100%;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(11, 14, 22, 0.95);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-wrap input {
+  padding-left: 42px;
+}
+
+input::placeholder {
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+
+input:focus, select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: rgba(14, 18, 28, 1);
+}
+
+select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+/* ========================================================
+   BUTONLAR
+   ======================================================== */
+button {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  padding: 13px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.btn-primary {
+  background: var(--btn-primary);
+  color: #fff;
+  box-shadow: var(--btn-primary-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55);
+  filter: brightness(1.06);
+}
+
+button.ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+button.ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+.btn-row button {
+  flex: 1;
+  font-size: 13px;
+  padding: 11px 12px;
+}
+
+.exit-btn {
+  align-self: flex-start;
+  padding: 7px 14px;
+  font-size: 13px;
+  border-radius: 999px;
+  color: var(--fg-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================================
+   MODERN SEÇENEKLER & TOGGLE SWITCH
+   ======================================================== */
+.check-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toggle-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--fg-muted);
+  line-height: 1.35;
+}
+
+.toggle-control input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  min-width: 38px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  transition: all 0.25s ease;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-control input:checked + .toggle-slider {
+  background: var(--blue);
+}
+
+.toggle-control input:checked + .toggle-slider::after {
+  transform: translateX(16px);
+}
+
+.err-msg {
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  min-height: 1.4em;
+}
+
+/* ========================================================
+   LOBİ EKRANI
+   ======================================================== */
+.lobby-header {
+  text-align: center;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.lobby-pill {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--blue);
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.code-display {
+  font-family: var(--font-mono);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #fff;
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.25);
+  padding: 4px 0 0 8px;
+}
+
+.lobby-sub {
+  font-size: 13px;
+  color: var(--fg-subtle);
+}
+
+/* Oyuncu Listesi Grid */
+ul#ll {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+ul#ll li {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+ul#ll li::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 8px var(--blue);
+  flex-shrink: 0;
+}
+
+.host-controls-card {
+  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(18, 24, 40, 0.9);
+}
+
+details#su {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+details#su summary {
+  font-weight: 700;
+  font-size: 14px;
+  color: #cbd5e1;
+  cursor: pointer;
+  outline: none;
+}
+
+#sg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#sg label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+#sg input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+
+#sg input[type=number] {
+  width: 76px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+#sg select {
+  width: auto;
+  max-width: 60%;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.status-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.round-select-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-deal {
+  font-size: 16px;
+  padding: 15px;
+  letter-spacing: 0.03em;
+}
+
+.waiting-text {
+  text-align: center;
+  font-size: 14px;
+  color: var(--fg-muted);
+  font-style: italic;
+  margin: 6px 0;
+}
+
+/* ========================================================
+   OYUN EKRANI & HUD
+   ======================================================== */
+.game-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.room-badge {
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
+}
+
+.room-badge.room-a {
+  background: rgba(59, 130, 246, 0.14);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.4);
+  text-shadow: 0 0 14px var(--blue-glow);
+}
+
+.room-badge.room-b {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+  text-shadow: 0 0 14px var(--red-glow);
+}
+
+.round-banner {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+.game-timer {
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  min-height: 1.25em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-timer.swap {
+  color: var(--amber);
+  text-shadow: 0 0 22px rgba(245, 158, 11, 0.5);
+  animation: swapGlow 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes swapGlow {
+  from { transform: scale(1); filter: brightness(1); }
+  to { transform: scale(1.04); filter: brightness(1.2); }
+}
+
+/* 3D Kart Alanı */
+#cardbox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stage {
+  perspective: 1200px;
+  width: min(72vw, 290px);
+  aspect-ratio: 442/686;
+  margin: 4px auto;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card.flip {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  object-fit: cover;
+  pointer-events: none;
+  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.front {
+  transform: rotateY(180deg);
+}
+
+#cover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-radius: 16px 16px 0 0;
+  background: #111 center/cover;
+  transform: rotateY(180deg) translateZ(1px);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: none;
+  pointer-events: none;
+}
+
+.game-hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--fg-muted);
+  min-height: 2.2em;
+  margin: 4px 0;
+  font-weight: 500;
+}
+
+/* Aksiyon Butonları */
+.game-action-btns {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 14px 12px;
+  font-size: 14px;
+}
+
+.btn-color {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(239, 68, 68, 0.2) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.btn-color:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(239, 68, 68, 0.3) 100%);
+}
+
+.btn-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--blue) 50%, var(--red) 50%);
+  display: inline-block;
+}
+
+.btn-reveal {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);
+}
+
+.btn-reveal:hover {
+  filter: brightness(1.1);
+}
+
+/* Moderatör Masası */
+.host-panel-bottom {
+  background: rgba(15, 20, 32, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.host-panel-header {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+.host-info {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.host-action-btns {
+  display: flex;
+  gap: 8px;
+}
+.host-action-btns button {
+  flex: 1;
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+}
+
+/* ========================================================
+   GERİ SAYIM ŞERİDİ & GİZLİLİK MODU
+   ======================================================== */
+#cdn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 900;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+#cdn:empty { display: none; }
+
+/* Renk veya Kart Paylaşımı Modunda UI Gizleme */
+body.cmode #lv,
+body.cmode .game-hud,
+body.cmode .game-panel,
+body.cmode .game-action-btns,
+body.cmode .host-panel-bottom,
+body.cmode .demobar-panel,
+body.cmode #cs {
+  visibility: hidden;
+}
+
+/* ========================================================
+   BİLDİRİM / ONAY MODALI (OVERLAY)
+   ======================================================== */
+#ov {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 14, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 99;
+}
+
+.ov-box {
+  background: #161c2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px;
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  animation: modalPop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.ov-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.ov-sub {
+  font-size: 15px;
+  color: var(--fg-muted);
+  line-height: 1.45;
+}
+
+.ov-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 13px;
+}
+
+/* Oyun Sonu Kazanan Paneli */
+.game-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.game-panel .t { text-align: center; font-weight: 800; }
+.game-panel .win {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+/* Bağlantı Durumu */
+.connection-status {
+  text-align: center;
+  font-size: 12px;
+  color: var(--fg-subtle);
+  min-height: 1.2em;
+}
+
+/* Kart Demosu Bar */
+.demobar-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.demobar-panel select { flex: 1; min-width: 140px; }

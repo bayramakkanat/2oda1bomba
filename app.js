@@ -559,6 +559,8 @@ function lost() {
 function renderLobby(names) {
   $('lc').textContent = code;
   $('ll').innerHTML = '';
+  const pTitle = document.querySelector('#lobby .panel-title');
+  if (pTitle) pTitle.textContent = `👥 Katılan Oyuncular (${names.length})`;
   names.forEach(n => {
     const li = document.createElement('li');
     li.textContent = n;
@@ -592,24 +594,28 @@ function onC(m) {
     draw();
     panel();
 
+    const roomClass = m.initRoom === 'A' ? 'room-badge room-a' : 'room-badge room-b';
     if (m.stage === 'result') {
       setMode('full', 0);
       $('timer').textContent = 'OYUN BİTTİ';
-      $('timer').className = '';
-      $('banner').textContent = 'Kartlar açıldı! Salonda toplanın.';
+      $('timer').className = 'game-timer';
+      $('banner').textContent = 'Kartlar açıldı! Koridorda toplanın.';
     } else if (m.stage === 'setup') {
       $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
+      $('room').className = roomClass;
       $('banner').textContent = `Lütfen ${m.initRoom} Odasına Geçin`;
       $('timer').textContent = 'Odalara Geçiş Bekleniyor...';
-      $('timer').className = '';
+      $('timer').className = 'game-timer';
     } else if (m.stage === 'swap') {
       $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
+      $('room').className = roomClass;
       $('banner').textContent = `🔔 ${m.round}. TUR BİTTİ!`;
-      $('timer').className = 'swap';
+      $('timer').className = 'game-timer swap';
     } else {
       $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
+      $('room').className = roomClass;
       $('banner').textContent = `${m.round}. TUR · Rehine Sayısı: ${m.hostages}`;
-      $('timer').className = '';
+      $('timer').className = 'game-timer';
     }
   } else if (m.t === 'err') {
     leaveToHome(m.m);
@@ -780,12 +786,13 @@ setInterval(() => {
 
   if (stage === 'round') {
     T.textContent = `Kalan Süre: ${timeStr}`;
-    T.className = '';
+    T.className = 'game-timer';
   } else if (stage === 'swap') {
     T.textContent = `⏳ Rehine Değişimi: ${timeStr}`;
-    T.className = 'swap';
+    T.className = 'game-timer swap';
   } else if (stage === 'gamble') {
     T.textContent = `Kumarbaz Tahmini: ${timeStr}`;
+    T.className = 'game-timer';
   }
 }, 250);
 

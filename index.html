@@ -1,34 +1,181 @@
 <!DOCTYPE html>
-<html lang="tr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>2 Oda 1 Bomba</title><link rel="stylesheet" href="style.css"></head>
-<body><div id="app">
-<button id="lv" class="ghost" hidden>⌂ Ana ekran</button>
-<section id="home"><h1>2 Oda 1 Bomba</h1>
-<input id="nm" placeholder="Adın" maxlength="16" autocomplete="off">
-<input id="cd" placeholder="Oyun kodu (kurarken boş bırakırsan rastgele)" maxlength="20" autocomplete="off">
-<label class="sm">Bağlantı <select id="net"><option value="cloud">İnternet (varsayılan)</option><option value="local">Yerel ağ (PC sunucusu, internetsiz)</option></select></label>
-<button id="bj">Katıl</button>
-<hr><label class="sm"><input type="checkbox" id="np"> Moderatör olarak oynamayacağım</label>
-<label class="sm"><input type="checkbox" id="tm"> Test modu (kısa süreler, test oyuncusu ekleme)</label>
-<button id="bh" class="ghost">Yeni oyun kur (moderatör)</button>
-<button id="bdemo" class="ghost">Kart demosu (kartları dene)</button><p id="herr" class="sm"></p></section>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>2 Oda 1 Bomba</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient-glow glow-blue"></div>
+  <div class="ambient-glow glow-red"></div>
 
-<section id="lobby" hidden><div class="sm">OYUN KODU</div><div id="lc"></div><ul id="ll"></ul>
-<div id="hp" hidden><details id="su"><summary>Karakter seti ve ayarlar</summary><div id="sg"></div></details><div id="ssum" class="sm"></div>
-<div class="row"><label class="sm">Tur sayısı: <select id="rn"><option value="3" selected>3 Tur (Önerilen: 3-2-1 rehine)</option><option value="5">5 Tur (4-3-2-1-1 rehine)</option></select></label></div>
-<button id="bd">Kartları Dağıt</button><button id="bb" class="ghost">+ Test oyuncusu</button></div>
-<p id="lh" class="sm">Moderatörün dağıtmasını bekle…</p></section>
+  <div id="app">
+    <button id="lv" class="ghost exit-btn" hidden>← Ana Ekran</button>
 
-<section id="game" hidden>
-<div id="demobar" hidden><select id="dsel"></select><label id="dsw" class="sm" hidden><input type="checkbox" id="dswc"> Sarhoş: ayık kart</label><button id="dx" class="ghost">← Menü</button></div>
-<div id="room"></div><div id="banner" class="sm"></div><div id="timer"></div><div id="panel" hidden></div>
-<div id="cardbox"><div class="stage" id="stage"><div class="card" id="card"><img class="face back" id="bk" alt=""><img class="face front" id="fr" alt=""><div id="cover"><span id="cdn"></span></div></div></div>
-<p id="hint"></p>
-<div class="btns"><button id="bc">Rengimi göster (3 sn)</button><button id="bf">Kartımı göster (5 sn)</button></div></div>
-<div id="hostp" hidden><b>Moderatör Kontrolleri</b><div id="hinfo"></div><div class="btns"><button id="bNext">Sonraki Tura Geç / Hemen Başlat</button><button id="bEnd" hidden>Sonuçları ve Kartları Aç</button><button id="bNew" class="ghost">Yeni Oyun</button></div></div>
-</section><div id="cs" class="sm"></div></div>
-<div id="ov"><div id="ovt"></div><div id="ovs"></div><button id="ok"></button></div>
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="local.js"></script>
-<script src="app.js"></script></body></html>
+    <!-- GİRİŞ EKRANI -->
+    <section id="home">
+      <div class="brand">
+        <div class="brand-badge">
+          <span class="team-blue">2 ODA</span>
+          <span class="bomb-badge">💣</span>
+          <span class="team-red">1 BOMBA</span>
+        </div>
+        <p class="brand-sub">Sosyal Dedüksiyon & Gizli Rol Oyunu</p>
+      </div>
+
+      <div class="card-panel">
+        <div class="field-group">
+          <label class="field-label" for="nm">Oyuncu Adın</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input id="nm" placeholder="Adını yaz..." maxlength="16" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cd">Oyun Kodu</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔑</span>
+            <input id="cd" placeholder="Örn: ODA1 (kurarken boşsa rastgele)" maxlength="20" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="net">Bağlantı Türü</label>
+          <select id="net">
+            <option value="cloud">🌐 İnternet (Varsayılan - PeerJS)</option>
+            <option value="local">💻 Yerel Ağ (PC Sunucusu, İnternetsiz)</option>
+          </select>
+        </div>
+
+        <button id="bj" class="btn-primary">Oyuna Katıl</button>
+      </div>
+
+      <div class="card-panel panel-secondary">
+        <div class="check-options">
+          <label class="toggle-control">
+            <input type="checkbox" id="np">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Moderatör olarak oynamayacağım (sadece yöneteceğim)</span>
+          </label>
+
+          <label class="toggle-control">
+            <input type="checkbox" id="tm">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Test modu (kısa süreler & test botları)</span>
+          </label>
+        </div>
+
+        <div class="btn-row">
+          <button id="bh" class="ghost">Yeni Oyun Kur (Moderatör)</button>
+          <button id="bdemo" class="ghost">Kart Demosu (Kartları İncele)</button>
+        </div>
+      </div>
+
+      <p id="herr" class="err-msg"></p>
+    </section>
+
+    <!-- LOBİ EKRANI -->
+    <section id="lobby" hidden>
+      <div class="lobby-header">
+        <div class="lobby-pill">OYUN KODU</div>
+        <div id="lc" class="code-display"></div>
+        <div class="lobby-sub">Arkadaşların bu kodla katılabilir</div>
+      </div>
+
+      <div class="card-panel">
+        <div class="panel-title">👥 Katılan Oyuncular</div>
+        <ul id="ll"></ul>
+      </div>
+
+      <div id="hp" class="card-panel host-controls-card" hidden>
+        <details id="su">
+          <summary>⚙️ Karakter Seti ve Deste Ayarları</summary>
+          <div id="sg"></div>
+        </details>
+        <div id="ssum" class="status-summary"></div>
+
+        <div class="round-select-row">
+          <label class="field-label" for="rn">Tur Sayısı:</label>
+          <select id="rn">
+            <option value="3" selected>3 Tur (3 - 2 - 1 Rehine)</option>
+            <option value="5">5 Tur (4 - 3 - 2 - 1 - 1 Rehine)</option>
+          </select>
+        </div>
+
+        <button id="bd" class="btn-primary btn-deal">Kartları Dağıt</button>
+        <button id="bb" class="ghost" hidden>+ Test Oyuncusu Ekle</button>
+      </div>
+
+      <p id="lh" class="waiting-text">Moderatörün oyunu başlatması bekleniyor…</p>
+    </section>
+
+    <!-- OYUN EKRANI -->
+    <section id="game" hidden>
+      <div id="demobar" class="demobar-panel" hidden>
+        <select id="dsel"></select>
+        <label id="dsw" class="sm" hidden><input type="checkbox" id="dswc"> Sarhoş: Ayık Kart</label>
+        <button id="dx" class="ghost">← Menüye Dön</button>
+      </div>
+
+      <div class="game-hud">
+        <div id="room" class="room-badge"></div>
+        <div id="banner" class="round-banner"></div>
+        <div id="timer" class="game-timer"></div>
+      </div>
+
+      <div id="panel" class="game-panel" hidden></div>
+
+      <div id="cardbox">
+        <div class="stage" id="stage">
+          <div class="card" id="card">
+            <img class="face back" id="bk" alt="Kapalı Kart">
+            <img class="face front" id="fr" alt="Karakter Kartı">
+            <div id="cover"><span id="cdn"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <p id="hint" class="game-hint"></p>
+
+      <div class="btns game-action-btns">
+        <button id="bc" class="btn-action btn-color">
+          <span class="btn-dot"></span> Rengimi Göster (3 sn)
+        </button>
+        <button id="bf" class="btn-action btn-reveal">
+          <span class="btn-icon">🎴</span> Kartımı Göster (5 sn)
+        </button>
+      </div>
+
+      <div id="hostp" class="host-panel-bottom" hidden>
+        <div class="host-panel-header">👑 Moderatör Masası</div>
+        <div id="hinfo" class="host-info"></div>
+        <div class="btns host-action-btns">
+          <button id="bNext" class="btn-primary btn-next-round">1. Turu Başlat</button>
+          <button id="bEnd" class="btn-accent" hidden>Sonuçları ve Kartları Aç</button>
+          <button id="bNew" class="ghost">Yeni Oyun</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="cs" class="connection-status"></div>
+  </div>
+
+  <!-- BİLDİRİM / UYARI MODALI -->
+  <div id="ov">
+    <div class="ov-box">
+      <div id="ovt" class="ov-title"></div>
+      <div id="ovs" class="ov-sub"></div>
+      <button id="ok" class="btn-primary ov-btn">Tamam</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="local.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
