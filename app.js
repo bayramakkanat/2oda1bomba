@@ -1,6 +1,8 @@
 'use strict';
 /* ========================================================
    2 Oda 1 Bomba – Minimalist & Fiziksel Dostu Oyun Motoru
+   Telefon = gizli kart + ortak saat. Gri roller kaldırıldı;
+   sadece Sarhoş kaldı (son turda gerçek karakterine döner).
    ======================================================== */
 
 // Renk paylaşımında kart şablonları (kart detayları rolü ele vermesin)
@@ -13,43 +15,38 @@ const SHARE = {
   bombaci: 'takim_kirmizi',
   casus_mavi: 'takim_kirmizi', // Mavi Casus: kartı kırmızı görünür, mavi için çalışır
   takim_kirmizi: 'takim_kirmizi',
-  stajyer: 'stajyer',
-  maktul: 'stajyer',
-  kumarbaz: 'stajyer',
   sarhos: 'sarhos'
 };
 
 const CV = {
   ajan_mavi: .842, ajan_kirmizi: .779, casus_mavi: .787, casus_kirmizi: .809,
   baskan: .782, bombaci: .788, takim_mavi: .797, takim_kirmizi: .791,
-  stajyer: .784, maktul: .784, sarhos: .81, kumarbaz: .782
+  sarhos: .81
 };
 const CV_UP = .010;
 
-// Rehine Takvimi: 3 turluk oyunda 3 - 2 - 1; 5 turlukta 4 - 3 - 2 - 1 - 1
+// Rehine takvimi: 3 turluk (basit) oyunda 3 - 2 - 1; 5 turlukta 5 - 4 - 3 - 2 - 1
 const HOSTAGE_SCHEDULE = {
   3: [3, 2, 1],
-  5: [4, 3, 2, 1, 1]
+  5: [5, 4, 3, 2, 1]
 };
 
 // Tur süreleri (saniye)
 const ROUND_SECS_NORMAL = {
-  3: [180, 120, 60],        // 3 dk, 2 dk, 1 dk
-  5: [300, 240, 180, 120, 60] // 5, 4, 3, 2, 1 dk
+  3: [180, 120, 60],           // 3 dk, 2 dk, 1 dk
+  5: [300, 240, 180, 120, 60]  // 5, 4, 3, 2, 1 dk
 };
 const ROUND_SECS_TEST = {
   3: [15, 10, 5],
   5: [15, 12, 10, 8, 5]
 };
 
-let SWAP_SECS = 45;   // Rehine değişimi / mola süresi (saniye)
-let GAMBLE_SECS = 15; // Kumarbaz tahmin süresi (saniye)
+let SWAP_SECS = 45; // Rehine seçimi + oda değişimi süresi (saniye)
 let TEST = false;
 
 function applyTest(on) {
   TEST = !!on;
   SWAP_SECS = on ? 10 : 45;
-  GAMBLE_SECS = on ? 5 : 15;
 }
 
 const roundDuration = (rounds, r) => (TEST ? ROUND_SECS_TEST : ROUND_SECS_NORMAL)[rounds][r - 1];
@@ -64,65 +61,54 @@ function shuffle(a) {
   return a;
 }
 
-/* ----- Deste Planlayıcı (Her iki takım her zaman eşit dengelenir) ----- */
-const OPT_DEF = { ajan: true, casus: true, stajyer: true, maktul: true, sarhos: true, kumarbaz: 'auto', blue: '', red: '' };
+/* ----- Deste Planlayıcı (Mavi ve Kırmızı her zaman eşit) -----
+   Başkan + Bombacı her zaman var. Ajan ve Casus çift olarak (1 Mavi + 1 Kırmızı) eklenir.
+   Oyuncu sayısı tekse Sarhoş "denge kartı" olarak eklenir (gri rol yok).
+   Çift sayıda Sarhoş, rastgele bir düz takım kartının yerine geçer; son turda o karakteri alır. */
+const OPT_DEF = { ajan: true, casus: true, sarhos: true, blue: '', red: '' };
 
 function planDeck(n, o) {
   o = { ...OPT_DEF, ...(o || {}) };
-  // Temel roller: 1 Mavi (Başkan) + 1 Kırmızı (Bombacı)
   const d = ['baskan', 'bombaci'];
-
-  // Ajanlar çift olarak eklenir (1 Mavi + 1 Kırmızı)
   if (o.ajan) d.push('ajan_mavi', 'ajan_kirmizi');
-  // Casuslar çift olarak eklenir (1 Mavi aidiyetli + 1 Kırmızı aidiyetli)
   if (o.casus) d.push('casus_mavi', 'casus_kirmizi');
-  // Gri roller
-  if (o.stajyer) d.push('stajyer');
-  if (o.maktul) d.push('maktul');
 
-  let k = o.kumarbaz === 'her' ? 1 : 0;
-  let rem = n - d.length - k;
-
+  let rem = n - d.length;
   if (rem < 0) {
-    return { error: `${n} oyuncuya ${d.length + k} özel kart sığmaz. Lütfen bazı özel kartları kapatın.` };
+    return { error: `${n} oyuncuya ${d.length} özel kart sığmaz. Ajan veya Casus çiftini kapatın.` };
   }
 
   const num = v => (v === '' || v == null ? null : Math.max(0, Math.floor(+v) || 0));
   const bs = num(o.blue), rs = num(o.red);
-  let blue, red;
+  let blue, red, extra = false;
 
   if (bs == null && rs == null) {
-    // Otomatik bölüştürme: Takımlar eşit bölünemiyorsa Kumarbaz eklenir
-    if (o.kumarbaz === 'auto' && (rem % 2 !== 0)) {
-      k = 1;
-      rem--;
-    }
-    if (rem % 2 !== 0) {
-      return { error: `Düz kart sayısı tek (${rem}). Takımların eşit olması için bir gri karakteri açıp/kapatın veya Kumarbaz'ı ayarlayın.` };
-    }
+    if (rem % 2 !== 0) { extra = true; rem--; } // tek sayı: Sarhoş denge kartı
     blue = red = rem / 2;
   } else {
-    // Elle girilmişse: Mavi ve Kırmızı her zaman eşit olmalıdır
     blue = red = (bs != null ? bs : rs);
     if (2 * blue > rem) return { error: `Mavi ${blue} + Kırmızı ${red} = ${2 * blue}, ama en fazla ${rem} düz kart sığıyor.` };
     const left = rem - 2 * blue;
-    if (left === 1 && o.kumarbaz === 'auto') k = 1;
+    if (left === 1) extra = true;
     else if (left > 0) return { error: `${left} kart boşta kalıyor, düz takım sayılarını artırın.` };
   }
 
-  const cards = [...d, ...Array(k).fill('kumarbaz'), ...Array(blue).fill('takim_mavi'), ...Array(red).fill('takim_kirmizi')];
+  const cards = [...d, ...Array(blue).fill('takim_mavi'), ...Array(red).fill('takim_kirmizi')];
 
   let sober = null;
-  if (o.sarhos) {
-    const plainIndices = cards.map((c, i) => c.startsWith('takim') ? i : -1).filter(i => i >= 0);
-    if (plainIndices.length) {
-      const idx = plainIndices[Math.floor(Math.random() * plainIndices.length)];
+  if (extra) {
+    cards.push('sarhos');
+    sober = Math.random() < .5 ? 'takim_mavi' : 'takim_kirmizi';
+  } else if (o.sarhos) {
+    const plain = cards.map((c, i) => (c.startsWith('takim') ? i : -1)).filter(i => i >= 0);
+    if (plain.length) {
+      const idx = plain[Math.floor(Math.random() * plain.length)];
       sober = cards[idx];
       cards[idx] = 'sarhos';
     }
   }
 
-  return { cards, sober, blue, red, k };
+  return { cards, sober, blue, red, extra };
 }
 
 function buildDeck(n, o) {
@@ -131,16 +117,27 @@ function buildDeck(n, o) {
   return { deck: shuffle(r.cards), sober: r.sober };
 }
 
-/* ----- Ses Efektleri (Web Audio API) & Titreşim ----- */
+/* ----- Ses (tek AudioContext, ilk dokunuşta açılır) & Titreşim ----- */
 function vib(pattern) {
   try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
 }
 
+let actx = null;
+function unlockAudio() {
+  try {
+    const A = window.AudioContext || window.webkitAudioContext;
+    if (!A) return;
+    if (!actx) actx = new A();
+    if (actx.state === 'suspended') actx.resume();
+  } catch (e) {}
+}
+['pointerdown', 'touchend', 'click'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive: true }));
+
 function beep(type) {
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    unlockAudio();
+    const ctx = actx;
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -155,7 +152,7 @@ function beep(type) {
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
     } else if (type === 'start') {
-      // Yeni tur başladığında neşeli yükselen melodi
+      // Yeni tur başladığında yükselen melodi
       osc.type = 'sine';
       osc.frequency.setValueAtTime(440, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25);
@@ -167,18 +164,44 @@ function beep(type) {
   } catch (e) {}
 }
 
+// Aynı alarm hem moderatör mesajıyla hem yerel yedekle gelirse bir kez çalsın
+let alarmDone = {};
+function alarm(kind, key) {
+  if (key) {
+    if (alarmDone[key]) return;
+    alarmDone[key] = 1;
+  }
+  beep(kind);
+  if (kind === 'end') vib([300, 150, 300, 150, 600]);
+  else if (kind === 'start') vib([150, 80, 250]);
+}
+
 /* ----- Durum ve Ağ Değişkenleri ----- */
 const $ = i => document.getElementById(i);
-const wl = () => { try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {} };
 const LS = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const uid = () => Math.random().toString(36).slice(2, 10);
 const normCode = s => String(s || '').replace(/[çÇ]/g, 'c').replace(/[ğĞ]/g, 'g').replace(/[ıİ]/g, 'i').replace(/[öÖ]/g, 'o').replace(/[şŞ]/g, 's').replace(/[üÜ]/g, 'u').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
 
+// Ekran uyumasın: wake lock bir kez alınır, sayfa tekrar görünür olunca yenilenir
+let wlock = null;
+function wl() {
+  try {
+    if (!navigator.wakeLock || wlock || document.visibilityState !== 'visible') return;
+    navigator.wakeLock.request('screen').then(l => {
+      wlock = l;
+      l.addEventListener('release', () => { wlock = null; });
+    }).catch(() => {});
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && (me || DEMO)) wl();
+});
+
 let gen = 0, pg = 0, joined = false, joinFresh = false, lostN = 0, lvT = 0;
-const LV0 = '⌂ Ana ekran';
+const LV0 = '← Ana Ekran';
 let peer, conn, rt, isHost = false, code = '', me = LS('2r1b_me'), H = null, C = {}, mode = 'closed';
-let tk = 0, cdI = 0, hideT = 0;
+let tk = 0, cdI = 0, hideT = 0, fadeT = 0, shareFade = 0;
 let DEMO = false;
 
 let NET = (me && me.net) || 'cloud';
@@ -186,6 +209,7 @@ let NET = (me && me.net) || 'cloud';
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
   $('lv').hidden = n !== 'lobby';
+  if (n !== 'home') wl();
 };
 const msg = t => { $('herr').textContent = t; };
 const status = t => { $('cs').textContent = t || ''; };
@@ -218,11 +242,11 @@ function leaveToHome(text, notify) {
     try { bcast({ t: 'bye' }); } catch (e) {}
   }
   gen++; pg++;
-  clearInterval(tk); clearTimeout(rt); clearInterval(cdI); clearTimeout(hideT);
+  clearInterval(tk); clearTimeout(rt); clearInterval(cdI); clearTimeout(hideT); clearTimeout(fadeT);
   try { if (conn) conn.close(); } catch (e) {}
   setTimeout(() => { try { if (pr) pr.destroy(); } catch (e) {} }, notify ? 500 : 0);
 
-  conn = null; peer = null; isHost = false; H = null; C = {}; me = null; code = ''; mode = 'closed';
+  conn = null; peer = null; isHost = false; H = null; C = {}; me = null; code = ''; mode = 'closed'; shareFade = 0; alarmDone = {};
   document.body.classList.remove('cmode'); joined = false; joinFresh = false; lostN = 0;
   try { localStorage.removeItem('2r1b_me'); localStorage.removeItem('2r1b_host'); } catch (e) {}
 
@@ -239,14 +263,16 @@ function leaveToHome(text, notify) {
 const persist = () => save('2r1b_host', { code, H: { ...H, players: H.players.map(({ conn, ...p }) => p) } });
 const byPid = id => (H && H.players ? H.players.find(p => p.pid === id) : null);
 const left = () => (H && H.endAt ? Math.max(0, Math.ceil((H.endAt - Date.now()) / 1000)) : 0);
-const need = r => hostagesFor(H.rounds, r || H.round);
+// Rehine sayısı, odada lider dışında yeterince kişi kalsın diye küçük oyunlarda (oda büyüklüğü - 1) ile sınırlanır
+const need = r => Math.min(hostagesFor(H.rounds, r || H.round), Math.max(1, Math.floor(H.players.length / 2) - 1));
 
 function hostInit(resume) {
   isHost = true;
   H = resume || {
     players: [], phase: 'lobby', round: 1, rounds: 3, stage: null,
-    endAt: 0, final: false, test: !!$('tm').checked, gambler: null, gChoice: null, result: null
+    endAt: 0, final: false, test: !!$('tm').checked, result: null
   };
+  if (H.stage === 'gamble') H.stage = 'ready'; // eski sürümden kalan kayıt
   applyTest(H.test);
   if (!resume && me.play) H.players.push({ pid: me.pid, name: me.name, self: true });
 
@@ -286,27 +312,23 @@ function lobbyAll() {
 }
 
 function hostMsg(c, m) {
-  if (m.t === 'join') {
-    let p = H.players.find(x => x.pid === m.pid);
-    if (!p) {
-      if (H.phase !== 'lobby') { c.send({ t: 'err', m: 'Oyun başladı, yeni oyuncu alınamıyor.' }); return; }
-      if (H.players.some(x => x.name.toLowerCase() === m.name.toLowerCase())) { c.send({ t: 'err', m: 'Bu isim zaten alınmış.' }); return; }
-      p = { pid: m.pid, name: m.name };
-      H.players.push(p);
-    }
-    p.conn = c;
-    if (H.phase === 'lobby') lobbyAll(); else sendState(p);
-    persist();
-    return;
+  if (m.t !== 'join') return;
+
+  let p = H.players.find(x => x.pid === m.pid);
+  if (!p && H.phase !== 'lobby') {
+    // Oyun başladıktan sonra tarayıcı verisi silinen oyuncu: aynı isimle, bağlantısı kopuk koltuğa geri dönebilir
+    const seat = H.players.find(x => !x.self && !x.bot && x.name.toLowerCase() === String(m.name).toLowerCase() && !(x.conn && x.conn.open));
+    if (seat) { seat.pid = m.pid; p = seat; }
   }
-  const p = H.players.find(x => x.conn === c);
-  if (p && m.t === 'gamble' && H.stage === 'gamble' && H.gambler === p.pid) {
-    if (m.team === 'mavi' || m.team === 'kirmizi') {
-      H.gChoice = m.team;
-      persist();
-      readyForResult();
-    }
+  if (!p) {
+    if (H.phase !== 'lobby') { c.send({ t: 'err', m: 'Oyun başladı. Bağlantısı kopan oyuncular eski adlarıyla girebilir.' }); return; }
+    if (H.players.some(x => x.name.toLowerCase() === m.name.toLowerCase())) { c.send({ t: 'err', m: 'Bu isim zaten alınmış.' }); return; }
+    p = { pid: m.pid, name: m.name };
+    H.players.push(p);
   }
+  p.conn = c;
+  if (H.phase === 'lobby') lobbyAll(); else sendState(p);
+  persist();
 }
 
 function sendState(p) {
@@ -314,7 +336,6 @@ function sendState(p) {
   send(p, {
     t: 'state',
     card: p.card,
-    sober: p.sober,
     initRoom: p.initRoom,
     round: H.round,
     total: H.rounds,
@@ -323,9 +344,6 @@ function sendState(p) {
     stage: H.stage,
     left: left(),
     final: H.final,
-    isG: H.gambler === p.pid,
-    gname: (byPid(H.gambler) || {}).name,
-    gChoice: (p.pid === H.gambler || H.stage === 'result') ? H.gChoice : null,
     result: H.stage === 'result' ? H.result : null
   });
 }
@@ -349,8 +367,6 @@ function deal() {
   H.round = 1;
   H.final = false;
   H.phase = 'game';
-  H.gambler = null;
-  H.gChoice = null;
   H.result = null;
 
   // Başlangıç odaları eşit bölünür (A ve B)
@@ -359,6 +375,7 @@ function deal() {
   H.players.forEach((p, i) => {
     p.card = r.deck[i];
     p.sober = p.card === 'sarhos' ? r.sober : undefined;
+    p.wasDrunk = false;
     p.initRoom = order.indexOf(i) < half ? 'A' : 'B';
   });
 
@@ -374,11 +391,14 @@ function startRound(rNum) {
   H.stage = 'round';
   H.endAt = Date.now() + roundDuration(H.rounds, H.round) * 1000;
 
-  // Son tura girilirken Sarhoş ayılır
+  // Son tura girilirken Sarhoş ayılır: kartı gerçek karakterine döner
+  const drunk = [];
   if (H.round === H.rounds) {
     H.players.forEach(p => {
       if (p.card === 'sarhos' && p.sober) {
         p.card = p.sober;
+        p.wasDrunk = true;
+        drunk.push(p);
       }
     });
   }
@@ -386,22 +406,23 @@ function startRound(rNum) {
   persist();
   pushAll();
   startTick();
-  bcast({ t: 'sound', s: 'start' });
+  bcast({ t: 'sound', s: 'start', k: 'start-' + H.round });
+  drunk.forEach(p => send(p, { t: 'drunk' }));
 }
 
 function endRound() {
   clearInterval(tk);
   if (H.round >= H.rounds) {
-    // Tüm turlar tamamlandı!
-    endGame();
+    // Tüm turlar tamamlandı: son rehineler gönderilir, sonra sonuçlar açılır
+    readyForResult();
   } else {
-    // Turlar arası rehine değişimi (mola)
+    // Turlar arası rehine seçimi ve oda değişimi
     H.stage = 'swap';
     H.endAt = Date.now() + SWAP_SECS * 1000;
     persist();
     pushAll();
     startTick();
-    bcast({ t: 'sound', s: 'end', msg: `${H.round}. TUR BİTTİ!\n${need()} Rehine seçip odaları değiştirin.` });
+    bcast({ t: 'sound', s: 'end', k: 'end-' + H.round, msg: `${H.round}. TUR BİTTİ!\n${need()} rehine seçip odaları değiştirin.` });
   }
 }
 
@@ -417,32 +438,13 @@ function nextRoundEarly() {
   }
 }
 
-function endGame() {
-  const g = H.players.find(p => p.card === 'kumarbaz');
-  if (g) {
-    H.gambler = g.pid;
-    H.stage = 'gamble';
-    H.endAt = Date.now() + GAMBLE_SECS * 1000;
-    persist();
-    pushAll();
-    startTick();
-  } else {
-    readyForResult();
-  }
-}
-
-function gambleDone() {
-  if (!H.gChoice) H.gChoice = Math.random() < .5 ? 'mavi' : 'kirmizi';
-  readyForResult();
-}
-
 function readyForResult() {
   clearInterval(tk);
   H.stage = 'ready';
   H.endAt = 0;
   persist();
   pushAll();
-  bcast({ t: 'sound', s: 'end', msg: 'OYUN BİTTİ!\nSon rehineleri gönderin ve tüm oyuncular tek bir salonda toplansın!' });
+  bcast({ t: 'sound', s: 'end', k: 'end-' + H.round, msg: `OYUN BİTTİ!\nSon ${need()} rehineyi odalarına gönderin, sonra herkes tek bir salonda toplansın.` });
 }
 
 function showResult() {
@@ -450,12 +452,11 @@ function showResult() {
   const pr = H.players.find(p => p.card === 'baskan');
   const bm = H.players.find(p => p.card === 'bombaci');
 
-  // Sonuç ekranı: Tüm oyuncuların rolleri ve kimlikleri listelenir
+  // Sonuç ekranı: Başkan, Bombacı ve tüm oyuncuların rolleri
   H.result = {
     pn: pr ? pr.name : '—',
     bn: bm ? bm.name : '—',
-    players: H.players.map(x => ({ n: x.name, c: x.card, s: x.sober })),
-    gChoice: H.gChoice
+    players: H.players.map(x => ({ n: x.name, c: x.card, d: !!x.wasDrunk }))
   };
 
   H.stage = 'result';
@@ -463,14 +464,14 @@ function showResult() {
   H.endAt = 0;
   persist();
   pushAll();
-  bcast({ t: 'sound', s: 'start' });
+  bcast({ t: 'sound', s: 'start', k: 'result' });
 }
 
 function newGame() {
   if (!confirm('Yeni oyun: Kartlar yeniden dağıtılacak. Emin misin?')) return;
   clearInterval(tk);
-  H.stage = null; H.endAt = 0; H.gambler = null; H.gChoice = null; H.result = null; H.phase = 'lobby'; H.final = false;
-  H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; });
+  H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.final = false;
+  H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; delete p.wasDrunk; });
   lobbyAll();
   $('hostp').hidden = true;
 }
@@ -486,7 +487,6 @@ function tick() {
   if (H.endAt && Date.now() >= H.endAt) {
     if (H.stage === 'round') endRound();
     else if (H.stage === 'swap') startRound(H.round + 1);
-    else if (H.stage === 'gamble') gambleDone();
   }
   hostRender();
 }
@@ -500,7 +500,6 @@ function hostRender() {
     setup: 'Odalara Geçiş Bekleniyor',
     round: `${H.round}. Tur Devam Ediyor`,
     swap: `Rehine Geçişi (${H.round}. Tur Sonu)`,
-    gamble: 'Kumarbaz Tahmin Yapıyor',
     ready: 'Oyun Bitti (Salonda Toplanın)',
     result: 'Kartlar ve Roller Açıldı'
   }[H.stage] || '';
@@ -516,13 +515,13 @@ function hostRender() {
   } else {
     $('bNext').textContent = 'Turu Erken Bitir';
   }
-  $('bEnd').hidden = !['ready'].includes(H.stage);
+  $('bEnd').hidden = H.stage !== 'ready';
 
   if (!me.play) {
     const pn = $('panel');
     pn.innerHTML = '';
-    if (['gamble', 'ready', 'result'].includes(H.stage)) {
-      endView(pn, { stage: H.stage, isG: false, gname: (byPid(H.gambler) || {}).name, gChoice: H.gChoice, result: H.result });
+    if (['ready', 'result'].includes(H.stage)) {
+      endView(pn, { stage: H.stage, hostages: need(), result: H.result });
     }
     pn.hidden = !pn.children.length;
   }
@@ -581,41 +580,41 @@ function onC(m) {
   if (m.t === 'bye') { if (!isHost) leaveToHome('Moderatör oyunu kapattı.'); return; }
   if (m.t === 'lobby') {
     C = {};
+    alarmDone = {};
     renderLobby(m.names);
     show('lobby');
   } else if (m.t === 'sound') {
-    beep(m.s);
-    if (m.s === 'end') vib([300, 150, 300, 150, 600]);
-    else if (m.s === 'start') vib([150, 80, 250]);
+    alarm(m.s, m.k);
     if (m.msg) ov(m.msg.split('\n')[0], m.msg.split('\n')[1] || '', 'Tamam');
+  } else if (m.t === 'drunk') {
+    alarm('start', 'drunk');
+    vib([200, 100, 200, 100, 400]);
+    ov('AYILDIN!', 'Artık sarhoş değilsin: kartın gerçek karakterine döndü. Kartına basılı tutup bak.', 'Tamam');
   } else if (m.t === 'state') {
+    if (m.stage === 'setup') alarmDone = {};
     C = { ...m, endAt: Date.now() + (m.left || 0) * 1000 };
     show('game');
     draw();
     panel();
 
-    const roomClass = m.initRoom === 'A' ? 'room-badge room-a' : 'room-badge room-b';
+    $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
+    $('room').className = m.initRoom === 'A' ? 'room-badge room-a' : 'room-badge room-b';
+    $('timer').className = 'game-timer';
+
     if (m.stage === 'result') {
       setMode('full', 0);
       $('timer').textContent = 'OYUN BİTTİ';
-      $('timer').className = 'game-timer';
       $('banner').textContent = 'Kartlar açıldı! Koridorda toplanın.';
+    } else if (m.stage === 'ready') {
+      $('banner').textContent = `🏁 OYUN BİTTİ · Son ${m.hostages} rehineyi gönderin`;
     } else if (m.stage === 'setup') {
-      $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
-      $('room').className = roomClass;
       $('banner').textContent = `Lütfen ${m.initRoom} Odasına Geçin`;
       $('timer').textContent = 'Odalara Geçiş Bekleniyor...';
-      $('timer').className = 'game-timer';
     } else if (m.stage === 'swap') {
-      $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
-      $('room').className = roomClass;
       $('banner').textContent = `🔔 ${m.round}. TUR BİTTİ!`;
       $('timer').className = 'game-timer swap';
     } else {
-      $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
-      $('room').className = roomClass;
       $('banner').textContent = `${m.round}. TUR · Rehine Sayısı: ${m.hostages}`;
-      $('timer').className = 'game-timer';
     }
   } else if (m.t === 'err') {
     leaveToHome(m.m);
@@ -633,30 +632,48 @@ function ov(t, s, b, fn) {
 /* ----- Kart Görseli ve Açılma Modları ----- */
 const CN = {
   baskan: 'Başkan', bombaci: 'Bombacı', ajan_mavi: 'Mavi Ajan', ajan_kirmizi: 'Kırmızı Ajan',
-  casus_mavi: 'Mavi Casus', casus_kirmizi: 'Kırmızı Casus', stajyer: 'Stajyer', maktul: 'Maktül',
-  kumarbaz: 'Kumarbaz', takim_mavi: 'Mavi Takım', takim_kirmizi: 'Kırmızı Takım', sarhos: 'Sarhoş'
+  casus_mavi: 'Mavi Casus', casus_kirmizi: 'Kırmızı Casus',
+  takim_mavi: 'Mavi Takım', takim_kirmizi: 'Kırmızı Takım', sarhos: 'Sarhoş'
 };
-const cardLabel = (c, sober) => (c === 'sarhos' && sober ? `Sarhoş (Asıl: ${CN[sober] || sober})` : (CN[c] || c));
+const cardLabel = (c, drunk) => (drunk ? `Sarhoştu → ${CN[c] || c}` : (CN[c] || c));
 
 function draw() {
   if (!C.card) return;
   const cardId = C.card;
-  const isColor = mode === 'color';
-  const showFace = isColor ? (SHARE[cardId] || cardId) : cardId;
+  // Renk paylaşımı sırasında ve kapanış animasyonunda, kartın kendi şeridi yerine ortak şablon şerit gösterilir
+  const useShare = mode === 'color' || shareFade;
+  const showFace = useShare ? (SHARE[cardId] || cardId) : cardId;
 
   $('fr').src = 'cards/' + showFace + '.jpg';
   $('card').classList.toggle('flip', mode !== 'closed');
 
   const cv = $('cover');
-  cv.style.height = ((CV[showFace] - CV_UP) * 100) + '%';
-  cv.style.display = isColor ? 'block' : 'none';
+  if (useShare) {
+    cv.style.height = ((CV[showFace] - CV_UP) * 100) + '%';
+    cv.style.display = 'block';
+  } else if (mode === 'show') {
+    cv.style.height = '0';        // sadece geri sayım rozeti görünsün
+    cv.style.display = 'block';
+  } else {
+    cv.style.display = 'none';
+  }
 }
 
 function setMode(m, ms, hText) {
   clearInterval(cdI);
   clearTimeout(hideT);
   $('cdn').textContent = '';
+  const was = mode;
   mode = m;
+
+  if (was === 'color' && m === 'closed') {
+    shareFade = 1; // kapanırken gerçek kart yüzü görünmesin
+    clearTimeout(fadeT);
+    fadeT = setTimeout(() => { shareFade = 0; draw(); }, 450);
+  } else if (m !== 'closed') {
+    shareFade = 0;
+    clearTimeout(fadeT);
+  }
 
   document.body.classList.toggle('cmode', m === 'color' || m === 'show');
   draw();
@@ -693,6 +710,7 @@ const closePeek = () => {
   if (mode === 'peek') setMode('closed');
 };
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => st.addEventListener(ev, closePeek));
+document.addEventListener('contextmenu', e => e.preventDefault());
 
 // Rengimi göster (3 sn ortak şablon şerit)
 $('bc').onclick = () => {
@@ -708,19 +726,14 @@ $('bf').onclick = () => {
   setMode('show', 5000, 'Kartın herkese açık görünüyor (5 sn)');
 };
 
-/* ----- Kumarbaz & Sonuç Paneli ----- */
-function act(m) {
-  if (isHost) hostMsg(null, m);
-  else if (conn) conn.send(m);
-}
-
+/* ----- Oyun Sonu Paneli ----- */
 function panel() {
   const p = $('panel');
   p.innerHTML = '';
   if (!C.card) { p.hidden = true; return; }
 
-  if (['gamble', 'ready', 'result'].includes(C.stage)) {
-    endView(p, { stage: C.stage, isG: C.isG, gname: C.gname, gChoice: C.gChoice, result: C.result });
+  if (['ready', 'result'].includes(C.stage)) {
+    endView(p, { stage: C.stage, hostages: C.hostages, result: C.result });
   }
   p.hidden = !p.children.length;
 }
@@ -734,47 +747,36 @@ function endView(p, d) {
     p.appendChild(el);
   };
 
-  if (d.stage === 'gamble') {
-    if (d.isG) {
-      tx('KUMARBAZ — Hangi takım kazanacak?');
-      [['mavi', 'MAVİ TAKIM', '#3d7bff'], ['kirmizi', 'KIRMIZI TAKIM', '#ff3b3b']].forEach(([k, label, col]) => {
-        const b = document.createElement('button');
-        b.textContent = label;
-        b.style.background = col;
-        b.onclick = () => { act({ t: 'gamble', team: k }); C.gChoice = k; panel(); };
-        p.appendChild(b);
-      });
-    } else {
-      tx(`Kumarbaz (${d.gname || '...'}) kazananı tahmin ediyor…`);
-    }
-  } else if (d.stage === 'ready') {
+  if (d.stage === 'ready') {
     tx('🏁 TÜM TURLAR BİTTİ!', 'win');
-    tx('Lütfen herkes tek bir salonda toplansın.', 't');
+    tx(`Son ${d.hostages} rehineyi odalarına gönderin.`, 't');
+    tx('Sonra herkes tek bir salonda toplansın.', 't');
     tx('Moderatör sonuçları açıklayacak ve kartları açacak.', 'sm');
   } else if (d.stage === 'result' && d.result) {
     const r = d.result;
     tx('🎉 OYUN TAMAMLANDI!', 'win');
-    tx('Fiziksel Kural: Başkan ve Bombacı aynı odada bitirdiyse KIRMIZI, farklı odalardaysa MAVİ kazanır!', 'sm');
     tx(`Başkan: ${r.pn} · Bombacı: ${r.bn}`, 't');
-    if (r.gChoice) {
-      tx(`Kumarbaz tahmini: ${r.gChoice.toUpperCase()}`, 't', r.gChoice === 'mavi' ? '#3d7bff' : '#ff3b3b');
-    }
+    tx('Başkan ve Bombacı aynı odadaysa', 'sm');
+    tx('KIRMIZI TAKIM KAZANIR', 't', '#ff3b3b');
+    tx('Farklı odalardaysa', 'sm');
+    tx('MAVİ TAKIM KAZANIR', 't', '#3d7bff');
 
     if (r.players) {
       const box = document.createElement('div');
       box.className = 'sm';
-      box.style.cssText = 'text-align:left;white-space:pre-line;margin-top:10px;padding:10px;border:1px solid var(--mut);border-radius:10px';
-      box.textContent = 'OYUNCU ROLLERİ:\n' + r.players.map(x => `• ${x.n}: ${cardLabel(x.c, x.s)}`).join('\n');
+      box.style.cssText = 'text-align:left;white-space:pre-line;margin-top:10px;padding:10px;border:1px solid var(--fg-subtle);border-radius:10px';
+      box.textContent = 'OYUNCU ROLLERİ:\n' + r.players.map(x => `• ${x.n}: ${cardLabel(x.c, x.d)}`).join('\n');
       p.appendChild(box);
     }
   }
 }
 
-/* ----- Geri Sayım Zamanlayıcısı ----- */
+/* ----- Geri Sayım Zamanlayıcısı (+ yerel yedek alarm) ----- */
 setInterval(() => {
   const T = $('timer');
   const stage = isHost && H ? H.stage : C.stage;
   const end = isHost && H ? H.endAt : C.endAt;
+  const rd = isHost && H ? H.round : C.round;
 
   if (!stage || !end || ['ready', 'result'].includes(stage)) {
     if (stage !== 'result') T.textContent = '';
@@ -787,12 +789,11 @@ setInterval(() => {
   if (stage === 'round') {
     T.textContent = `Kalan Süre: ${timeStr}`;
     T.className = 'game-timer';
+    if (s === 0 && rd) alarm('end', 'end-' + rd); // moderatör mesajı gecikse bile süre dolunca çalar
   } else if (stage === 'swap') {
     T.textContent = `⏳ Rehine Değişimi: ${timeStr}`;
     T.className = 'game-timer swap';
-  } else if (stage === 'gamble') {
-    T.textContent = `Kumarbaz Tahmini: ${timeStr}`;
-    T.className = 'game-timer';
+    if (s === 0 && rd) alarm('start', 'start-' + (rd + 1));
   }
 }, 250);
 
@@ -800,9 +801,7 @@ setInterval(() => {
 const SETUP_LIST = [
   ['ajan', 'Ajanlar (Mavi & Kırmızı Ajan)'],
   ['casus', 'Casuslar (Mavi & Kırmızı Casus)'],
-  ['stajyer', 'Stajyer (Gri Rol)'],
-  ['maktul', 'Maktül (Gri Rol)'],
-  ['sarhos', 'Sarhoş (Son Tur Ayılır)']
+  ['sarhos', 'Sarhoş (son turda ayılır)']
 ];
 
 function buildSetup() {
@@ -822,20 +821,6 @@ function buildSetup() {
     c.checked = !!o[k];
     row(t, c);
   });
-
-  const kb = document.createElement('select');
-  kb.dataset.k = 'kumarbaz';
-  [
-    ['auto', 'Otomatik (Tek sayıda eklenir)'],
-    ['her', 'Her zaman var'],
-    ['yok', 'Hiç yok']
-  ].forEach(([v, t]) => {
-    const op = document.createElement('option');
-    op.value = v; op.textContent = t;
-    kb.appendChild(op);
-  });
-  kb.value = o.kumarbaz || 'auto';
-  row('Kumarbaz (Gri)', kb);
 
   [['blue', 'Düz Mavi takım sayısı'], ['red', 'Düz Kırmızı takım sayısı']].forEach(([k, t]) => {
     const i = document.createElement('input');
@@ -871,14 +856,17 @@ function updateSum(n) {
   const opts = readOpts();
   const r = planDeck(n, opts);
   const s = $('ssum');
+  const pre = TEST ? 'TEST MODU · ' : '';
   if (r.error) {
-    s.textContent = (TEST ? 'TEST MODU · ' : '') + `${n} Oyuncu · ⚠ ${r.error}`;
+    s.textContent = pre + `${n} Oyuncu · ⚠ ${r.error}`;
     s.style.color = '#ff6b6b';
   } else {
-    const totalBlue = r.blue + (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0) + 1;
-    const totalRed = r.red + (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0) + 1;
-    s.textContent = (TEST ? 'TEST MODU · ' : '') + `${n} Oyuncu · Mavi: ${totalBlue} (${r.blue} Düz) · Kırmızı: ${totalRed} (${r.red} Düz)` +
-      (r.k ? ' · Kumarbaz' : '') + (r.sober ? ' · Sarhoş' : '');
+    const pair = (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0);
+    let t = pre + `${n} Oyuncu · Mavi: ${r.blue + pair + 1} · Kırmızı: ${r.red + pair + 1}`;
+    if (r.extra) t += ' · Tek sayı: Sarhoş denge kartı (son turda bir takım 1 kişi fazla olur)';
+    else if (r.sober) t += ' · Sarhoş var';
+    else if (opts.sarhos) t += ' · (düz kart yok, Sarhoş eklenmedi)';
+    s.textContent = t;
     s.style.color = '';
   }
 }
@@ -887,6 +875,7 @@ function updateSum(n) {
 function start(isH) {
   const name = $('nm').value.trim();
   if (!name) return msg('Lütfen adını yaz.');
+  unlockAudio();
   wl();
 
   NET = $('net').value;
@@ -936,6 +925,7 @@ function demoLoad(card) {
 
 $('bdemo').onclick = () => {
   DEMO = true;
+  unlockAudio();
   const sel = $('dsel');
   if (!sel.children.length) {
     Object.keys(CN).forEach(k => {
@@ -961,6 +951,9 @@ $('dswc').onchange = () => {
 $('dx').onclick = () => {
   DEMO = false;
   mode = 'closed';
+  shareFade = 0;
+  clearTimeout(fadeT); clearTimeout(hideT); clearInterval(cdI);
+  $('cdn').textContent = '';
   document.body.classList.remove('cmode');
   $('card').classList.remove('flip');
   $('demobar').hidden = true;

@@ -13,7 +13,7 @@ const srv=http.createServer((req,res)=>{
  if(!f.startsWith(ROOT+path.sep)||f.startsWith(__dirname)||u.split('/').some(s=>s.startsWith('.'))){res.writeHead(403);return res.end('Yasak')}
  fs.readFile(f,(err,d)=>{
   if(err){res.writeHead(404);return res.end('Bulunamadi')}
-  if(path.basename(f)==='index.html')d=Buffer.from(d.toString('utf8').replace(/<script src="https:\/\/cdn\.jsdelivr[^>]*><\/script>\s*/,'')); // internet yok: PeerJS CDN'i yüklenmeye çalışılmasın
+  if(path.basename(f)==='index.html')d=Buffer.from(d.toString('utf8').replace(/<script src="https:\/\/cdn\.jsdelivr[^>]*><\/script>\s*/,'').replace(/<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>\s*/g,'')); // internet yok: PeerJS CDN'i yüklenmeye çalışılmasın
   res.writeHead(200,{'Content-Type':MIME[path.extname(f).toLowerCase()]||'application/octet-stream','Cache-Control':'no-store'});
   res.end(d)})});
 

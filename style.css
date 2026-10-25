@@ -865,6 +865,7 @@ body.cmode #cs {
   gap: 8px;
 }
 .game-panel .t { text-align: center; font-weight: 800; }
+.game-panel .sm, .sm { text-align: center; font-size: 13px; color: var(--fg-muted); }
 .game-panel .win {
   text-align: center;
   font-size: 32px;
