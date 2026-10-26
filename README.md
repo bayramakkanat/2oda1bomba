@@ -8,7 +8,7 @@ Bu uygulama, **Two Rooms and a Boom (2 Oda 1 Bomba)** oyununu ekrana boğmadan o
 
 ## Oynanış
 
-1. **Kurulum:** Moderatör oyunu kurar (isteğe bağlı kendi kodunu yazar), oyuncular kodla katılır. Moderatör **Tur Sayısı**nı seçer ve **Kartları Dağıt** der. En az 6 oyuncu gerekir.
+1. **Kurulum:** Moderatör oyunu kurar (isteğe bağlı kendi kodunu yazar), oyuncular kodla katılır. Moderatör **Tur Sayısı**nı seçer ve **Kartları Dağıt** der. En az 6 oyuncu gerekir. Oyun **her zaman çift sayıda oyuncuyla** oynanır: tek sayıda kişi varsa moderatör oyuna girmeden yönetir (dağıtırken onay sorulur).
 2. **Başlangıç odası:** Herkesin ekranında A ya da B odası yazar. Oyuncular odalarına geçer, moderatör **1. Turu Başlat** der.
 3. **Tur:** Tüm telefonlarda aynı geri sayım çalar. Süre dolunca ses ve titreşim gelir: *"n. TUR BİTTİ! X rehine seçip odaları değiştirin."* Oda liderleri rehineleri seçer ve gönderir. Bu aşama için **45 saniyelik** sayaç çalışır, bitince yeni tur kendiliğinden başlar (moderatör erken de başlatabilir).
 4. **Son tur:** Süre dolunca *"OYUN BİTTİ! Son X rehineyi odalarına gönderin, sonra herkes tek bir salonda toplansın."* mesajı gelir. Moderatör **Sonuçları ve Kartları Aç** der, herkesin kartı açılır.
@@ -29,11 +29,13 @@ Küçük oyunlarda rehine sayısı, odada lider dışında yeterince kişi kals�
 
 Başkan + Bombacı her zaman vardır. **Ajanlar** (Mavi + Kırmızı) ve **Casuslar** (Mavi + Kırmızı) çift olarak açılıp kapatılır. Kalan oyuncular düz Mavi/Kırmızı takım kartı olur; iki takım **her zaman eşit** bölünür. Düz Mavi ve Kırmızı sayıları elle girilirse birini yazınca diğeri aynı sayıya eşlenir.
 
-**Sarhoş:** Çift sayıda oyuncuyla rastgele bir düz takım kartının yerine geçer ve o karakter son turda Sarhoş'a verilir. **Tek sayıda oyuncuyla** Sarhoş denge kartı olarak eklenir (Sarhoş kutusu kapalı olsa bile) ve son turda rastgele bir takıma katılır, yani o takım 1 kişi fazla olur.
+**Çift sayı kuralı:** Moderatör katılıyor ve sayı tekse, "Kartları Dağıt" derken moderatörün oyuna girmeden yönetmesi onaylanır (7 kişi → 6 oyuncu). Yeni oyunda moderatör tekrar oyuncu olarak eklenir. Moderatör zaten oynamıyorsa ve sayı tekse bir oyuncu daha katılmalı ya da biri çıkmalıdır. Böylece iki takım hep eşit kalır.
+
+**Sarhoş:** Rastgele bir düz takım kartının yerine geçer ve **3. turun başında** o karaktere döner (3 turluk oyunda 3. tur zaten son turdur, 5 turlu oyunda 3. turdan itibaren normal rolüyle oynar).
 
 **Sarhoş nasıl çalışır (fiziksel hisse yakın):**
-- Oyun boyunca kartı "SARHOŞ – ??? TAKIM" görünür, renk paylaşımında mor çıkar. Kendi rolünü bilmez.
-- Son tura girerken telefonu titrer, ses çalar ve *"AYILDIN! Kartının gerçek karakterine döndü"* mesajı çıkar. Kartına basılı tutup yeni rolünü okur.
+- İlk 2 tur boyunca kartı "SARHOŞ – ??? TAKIM" görünür, renk paylaşımında mor çıkar. Kendi rolünü bilmez.
+- 3. tura girerken telefonu titrer, ses çalar ve *"AYILDIN! Kartının gerçek karakterine döndü"* mesajı çıkar. Kartına basılı tutup yeni rolünü okur.
 - Sonuç ekranında "Sarhoştu → Mavi Takım" gibi görünür.
 
 ---
@@ -44,6 +46,16 @@ Başkan + Bombacı her zaman vardır. **Ajanlar** (Mavi + Kırmızı) ve **Casus
 - **Rengimi göster (3 sn):** Herkes için aynı şablon renk şeridi gösterilir (Mavi: Başkan/Mavi Ajan/Kırmızı Casus/Mavi Takım, Kırmızı: Bombacı/Kırmızı Ajan/Mavi Casus/Kırmızı Takım, Sarhoş: mor). Bu sırada ekranda başka hiçbir şey görünmez. Kapanış animasyonunda da şablon şerit kalır, gerçek kart görünmez.
 - **Kartımı göster (5 sn):** Tam kartı gösterir, yüz yüze kart paylaşımı ve Ajan kanıtı için kullanılır.
 - **Ajan:** Telefonda Ajan'a özel buton yoktur. Ajan, hedefine kartını 5 sn göstererek Ajan olduğunu kanıtlar ve hedefin kartını görmesini ister. Turda 1 kez kullanma kuralı oyuncuların dürüstlüğüne bırakılmıştır.
+
+---
+
+## Moderatör Düğmeleri
+
+- **Herkes Odasında, 1. Turu Başlat:** Odalara geçiş bitince ilk turun sayaçlarını başlatır.
+- **Turu Erken Bitir:** Sadece bir tur sürürken görünür, onay sorar. Tur süresini keser, herkese "TUR BİTTİ" alarmını gönderir ve rehine geçişi sayacını (45 sn) başlatır. Normal oyunda gerekmez: yanlışlıkla erken başlatıldıysa, herkes anlaşıp turu kapatmak istiyorsa ya da test sırasında işe yarar. Son turda basılırsa doğrudan "OYUN BİTTİ" aşamasına geçer.
+- **Rehineler Geçti, n. Turu Başlat:** Rehine geçişi sırasında görünür, kalan süreyi beklemeden yeni turu başlatır.
+- **Sonuçları ve Kartları Aç:** Son rehineler gönderilip herkes toplanınca tüm kartları açar.
+- **Yeni Oyun:** Lobiye döner, kartlar yeniden dağıtılır.
 
 ---
 

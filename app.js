@@ -31,6 +31,9 @@ const HOSTAGE_SCHEDULE = {
   5: [5, 4, 3, 2, 1]
 };
 
+// Sarhoş ilk 2 tur sarhoş kalır, bu turun başında ayılır (3 turluk oyunda bu zaten son turdur)
+const DRUNK_WAKE_ROUND = 3;
+
 // Tur süreleri (saniye)
 const ROUND_SECS_NORMAL = {
   3: [180, 120, 60],           // 3 dk, 2 dk, 1 dk
@@ -63,12 +66,13 @@ function shuffle(a) {
 
 /* ----- Deste Planlayıcı (Mavi ve Kırmızı her zaman eşit) -----
    Başkan + Bombacı her zaman var. Ajan ve Casus çift olarak (1 Mavi + 1 Kırmızı) eklenir.
-   Oyuncu sayısı tekse Sarhoş "denge kartı" olarak eklenir (gri rol yok).
-   Çift sayıda Sarhoş, rastgele bir düz takım kartının yerine geçer; son turda o karakteri alır. */
+   Oyun hep çift sayıda oyuncuyla oynanır: oyuncu sayısı tekse moderatör oyuna girmeden yönetir (deal()).
+   Sarhoş, rastgele bir düz takım kartının yerine geçer; DRUNK_WAKE_ROUND. turda o karakteri alır. */
 const OPT_DEF = { ajan: true, casus: true, sarhos: true, blue: '', red: '' };
 
 function planDeck(n, o) {
   o = { ...OPT_DEF, ...(o || {}) };
+  if (n % 2 !== 0) return { error: 'Oyuncu sayısı çift olmalı (tek sayıda moderatör oyuna girmez).' };
   const d = ['baskan', 'bombaci'];
   if (o.ajan) d.push('ajan_mavi', 'ajan_kirmizi');
   if (o.casus) d.push('casus_mavi', 'casus_kirmizi');
@@ -80,26 +84,21 @@ function planDeck(n, o) {
 
   const num = v => (v === '' || v == null ? null : Math.max(0, Math.floor(+v) || 0));
   const bs = num(o.blue), rs = num(o.red);
-  let blue, red, extra = false;
+  let blue, red;
 
   if (bs == null && rs == null) {
-    if (rem % 2 !== 0) { extra = true; rem--; } // tek sayı: Sarhoş denge kartı
-    blue = red = rem / 2;
+    blue = red = rem / 2; // oyuncu sayısı çift olduğu için kalan düz kart sayısı da çifttir
   } else {
     blue = red = (bs != null ? bs : rs);
     if (2 * blue > rem) return { error: `Mavi ${blue} + Kırmızı ${red} = ${2 * blue}, ama en fazla ${rem} düz kart sığıyor.` };
     const left = rem - 2 * blue;
-    if (left === 1) extra = true;
-    else if (left > 0) return { error: `${left} kart boşta kalıyor, düz takım sayılarını artırın.` };
+    if (left > 0) return { error: `${left} kart boşta kalıyor, düz takım sayılarını artırın.` };
   }
 
   const cards = [...d, ...Array(blue).fill('takim_mavi'), ...Array(red).fill('takim_kirmizi')];
 
   let sober = null;
-  if (extra) {
-    cards.push('sarhos');
-    sober = Math.random() < .5 ? 'takim_mavi' : 'takim_kirmizi';
-  } else if (o.sarhos) {
+  if (o.sarhos) {
     const plain = cards.map((c, i) => (c.startsWith('takim') ? i : -1)).filter(i => i >= 0);
     if (plain.length) {
       const idx = plain[Math.floor(Math.random() * plain.length)];
@@ -108,7 +107,7 @@ function planDeck(n, o) {
     }
   }
 
-  return { cards, sober, blue, red, extra };
+  return { cards, sober, blue, red };
 }
 
 function buildDeck(n, o) {
@@ -354,8 +353,21 @@ function pushAll() {
 }
 
 function deal() {
-  const n = H.players.length;
+  let n = H.players.length;
   if (n < (TEST ? 4 : 6)) return alert(`En az ${TEST ? 4 : 6} oyuncu gerekli.`);
+
+  // Oyun hep çift sayıda oyuncuyla oynanır: tek sayıda ise moderatör oyuna girmeden yönetir
+  if (n % 2 !== 0) {
+    if (!H.players.some(p => p.self)) {
+      return alert(`Oyuncu sayısı tek (${n}) ve moderatör zaten oynamıyor. Oyun çift sayıda oynanır: bir oyuncu daha katılsın ya da biri çıksın.`);
+    }
+    if (!confirm(`${n} kişi var (tek sayı). Moderatör (sen) oyuna girmeden yönetsin, ${n - 1} kişiyle oynansın mı?`)) return;
+    H.players = H.players.filter(p => !p.self);
+    me.play = false;
+    save('2r1b_me', me);
+    n = H.players.length;
+    if (n < (TEST ? 4 : 6)) return alert(`Moderatör çıkınca ${n} oyuncu kalıyor, en az ${TEST ? 4 : 6} gerekli.`);
+  }
   let r;
   try {
     r = buildDeck(n, readOpts());
@@ -391,9 +403,9 @@ function startRound(rNum) {
   H.stage = 'round';
   H.endAt = Date.now() + roundDuration(H.rounds, H.round) * 1000;
 
-  // Son tura girilirken Sarhoş ayılır: kartı gerçek karakterine döner
+  // 3. tura girerken Sarhoş ayılır: kartı gerçek karakterine döner (3 turluk oyunda bu son turdur)
   const drunk = [];
-  if (H.round === H.rounds) {
+  if (H.round >= DRUNK_WAKE_ROUND) {
     H.players.forEach(p => {
       if (p.card === 'sarhos' && p.sober) {
         p.card = p.sober;
@@ -472,6 +484,12 @@ function newGame() {
   clearInterval(tk);
   H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.final = false;
   H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; delete p.wasDrunk; });
+  // Tek sayı yüzünden oyundan çıkarılan moderatör yeni oyunda tekrar oyuncu olarak eklenir
+  if (me.wantPlay && !H.players.some(p => p.self)) {
+    H.players.push({ pid: me.pid, name: me.name, self: true });
+    me.play = true;
+    save('2r1b_me', me);
+  }
   lobbyAll();
   $('hostp').hidden = true;
 }
@@ -854,19 +872,29 @@ function readOpts() {
 function updateSum(n) {
   if (n == null) n = H ? H.players.length : 0;
   const opts = readOpts();
-  const r = planDeck(n, opts);
   const s = $('ssum');
   const pre = TEST ? 'TEST MODU · ' : '';
+  let eff = n, note = '';
+  if (n % 2 !== 0) {
+    if (H && H.players.some(p => p.self)) {
+      eff = n - 1;
+      note = ' · Tek sayı: moderatör oyuna girmeden yönetecek';
+    } else {
+      s.textContent = pre + `${n} Oyuncu · ⚠ Tek sayı: bir oyuncu daha katılmalı ya da biri çıkmalı (oyun çift sayıda oynanır).`;
+      s.style.color = '#ff6b6b';
+      return;
+    }
+  }
+  const r = planDeck(eff, opts);
   if (r.error) {
-    s.textContent = pre + `${n} Oyuncu · ⚠ ${r.error}`;
+    s.textContent = pre + `${eff} Oyuncu · ⚠ ${r.error}`;
     s.style.color = '#ff6b6b';
   } else {
     const pair = (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0);
-    let t = pre + `${n} Oyuncu · Mavi: ${r.blue + pair + 1} · Kırmızı: ${r.red + pair + 1}`;
-    if (r.extra) t += ' · Tek sayı: Sarhoş denge kartı (son turda bir takım 1 kişi fazla olur)';
-    else if (r.sober) t += ' · Sarhoş var';
+    let t = pre + `${eff} Oyuncu · Mavi: ${r.blue + pair + 1} · Kırmızı: ${r.red + pair + 1}`;
+    if (r.sober) t += ' · Sarhoş var (3. turda ayılır)';
     else if (opts.sarhos) t += ' · (düz kart yok, Sarhoş eklenmedi)';
-    s.textContent = t;
+    s.textContent = t + note;
     s.style.color = '';
   }
 }
@@ -886,7 +914,7 @@ function start(isH) {
   clearTimeout(rt); clearInterval(tk); gen++; isHost = false; H = null; joined = false; lostN = 0; joinFresh = !isH;
   if (isH) {
     code = normCode($('cd').value) || Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.floor(Math.random() * 23)]).join('');
-    me = { name, pid: uid(), code, host: true, play: !$('np').checked, net: NET };
+    me = { name, pid: uid(), code, host: true, play: !$('np').checked, wantPlay: !$('np').checked, net: NET };
     save('2r1b_me', me);
     hostInit();
   } else {
