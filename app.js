@@ -214,7 +214,13 @@ function goFullscreen() {
   } catch (e) {}
 }
 // Oyuna girildikten sonra, tam ekrandan çıkılmışsa bir sonraki dokunuşta tekrar tam ekrana geçer
-['click', 'touchend'].forEach(ev => document.addEventListener(ev, () => { if (me || DEMO) goFullscreen(); }, { passive: true }));
+// Dokunmatik kaydırma akıcı kalsın diye sadece gerçek tıklamalarda (touchend değil) ve en fazla 3 sn'de bir denenir
+let fsT = 0;
+document.addEventListener('click', () => {
+  if (!(me || DEMO) || Date.now() - fsT < 3000) return;
+  fsT = Date.now();
+  goFullscreen();
+}, { passive: true });
 
 let gen = 0, pg = 0, joined = false, joinFresh = false, lostN = 0, lvT = 0;
 const LV0 = '← Ana Ekran';
@@ -541,6 +547,8 @@ function hostRender() {
   if (!isHost || !H) return;
   $('hostp').hidden = false;
   $('cardbox').hidden = !me.play;
+  $('lv').hidden = H.stage !== 'result';
+  $('bHome').hidden = H.stage !== 'result';
 
   const stageName = {
     setup: 'Odalara Geçiş Bekleniyor',
@@ -643,6 +651,7 @@ function onC(m) {
     show('game');
     draw();
     panel();
+    $('lv').hidden = m.stage !== 'result'; // oyun bitince çıkış düğmesi açılır
 
     $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
     $('room').className = m.initRoom === 'A' ? 'room-badge room-a' : 'room-badge room-b';
@@ -691,7 +700,8 @@ function draw() {
   const useShare = mode === 'color' || shareFade;
   const showFace = useShare ? (SHARE[cardId] || cardId) : cardId;
 
-  $('fr').src = 'cards/' + showFace + '.jpg';
+  const fr = $('fr'), src = 'cards/' + showFace + '.jpg';
+  if (fr.getAttribute('src') !== src) fr.src = src; // aynı görseli tekrar atamak yeniden çözmeye ve titremeye yol açabilir
   $('card').classList.toggle('flip', mode !== 'closed');
 
   const cv = $('cover');
@@ -746,14 +756,30 @@ function setMode(m, ms, hText) {
 
 /* ----- Kart Etkileşimi (Hold to Peek, Release to Close) ----- */
 const st = $('stage');
+let peekT = 0, peekX = 0, peekY = 0;
+const PEEK_DELAY = 130; // kaydırma denemesinde kart yanlışlıkla açılmasın
 
 st.addEventListener('pointerdown', e => {
   wl();
   if (mode !== 'closed') return;
-  setMode('peek', 0, 'Parmağını basılı tuttuğun sürece kart açık kalır');
+  peekX = e.clientX; peekY = e.clientY;
+  clearTimeout(peekT);
+  peekT = setTimeout(() => {
+    if (mode === 'closed') setMode('peek', 0, 'Parmağını basılı tuttuğun sürece kart açık kalır');
+  }, PEEK_DELAY);
+});
+
+// Parmak kayarsa bu bir kaydırmadır: kartı açma
+st.addEventListener('pointermove', e => {
+  if (peekT && (Math.abs(e.clientX - peekX) > 10 || Math.abs(e.clientY - peekY) > 10)) {
+    clearTimeout(peekT);
+    peekT = 0;
+  }
 });
 
 const closePeek = () => {
+  clearTimeout(peekT);
+  peekT = 0;
   if (mode === 'peek') setMode('closed');
 };
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => st.addEventListener(ev, closePeek));
@@ -819,6 +845,11 @@ function endView(p, d) {
 }
 
 /* ----- Geri Sayım Zamanlayıcısı (+ yerel yedek alarm) ----- */
+// Metin ya da sınıf değişmediyse DOM'a dokunma: gereksiz yeniden boyama kaydırmayı takıldırır
+function setT(T, text, cls) {
+  if (T.textContent !== text) T.textContent = text;
+  if (cls && T.className !== cls) T.className = cls;
+}
 setInterval(() => {
   const T = $('timer');
   const stage = isHost && H ? H.stage : C.stage;
@@ -826,7 +857,7 @@ setInterval(() => {
   const rd = isHost && H ? H.round : C.round;
 
   if (!stage || !end || ['ready', 'result'].includes(stage)) {
-    if (stage !== 'result') T.textContent = '';
+    if (stage !== 'result') setT(T, '');
     return;
   }
 
@@ -834,12 +865,10 @@ setInterval(() => {
   const timeStr = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   if (stage === 'round') {
-    T.textContent = `Kalan Süre: ${timeStr}`;
-    T.className = 'game-timer';
+    setT(T, `Kalan Süre: ${timeStr}`, 'game-timer');
     if (s === 0 && rd) alarm('end', 'end-' + rd); // moderatör mesajı gecikse bile süre dolunca çalar
   } else if (stage === 'swap') {
-    T.textContent = `⏳ Rehine Değişimi: ${timeStr}`;
-    T.className = 'game-timer swap';
+    setT(T, `⏳ Rehine Değişimi: ${timeStr}`, 'game-timer swap');
     if (s === 0 && rd) alarm('start', 'start-' + (rd + 1));
   }
 }, 250);
@@ -971,6 +1000,9 @@ $('bb').onclick = () => {
 $('bNext').onclick = nextRoundEarly;
 $('bEnd').onclick = showResult;
 $('bNew').onclick = newGame;
+$('bHome').onclick = () => {
+  if (confirm('Oyun herkes için kapanacak ve ana menüye döneceksin. Emin misin?')) leaveToHome('Oyun kapatıldı.', true);
+};
 
 $('bk').src = 'cards/back.jpg';
 $('cover').style.backgroundImage = 'url(cards/back.jpg)';

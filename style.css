@@ -37,8 +37,12 @@
   box-sizing: inherit;
 }
 
-html, body {
+html {
   height: 100%;
+}
+
+/* Not: overflow-x yalnızca body'de olmalı. html'de de olursa body kendi kaydırma alanı olur ve mobilde kaydırma takılır */
+html, body {
   margin: 0;
   padding: 0;
   background-color: var(--bg);
@@ -49,6 +53,10 @@ html, body {
   user-select: none;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+}
+
+body {
+  min-height: 100%;
   overflow-x: hidden;
 }
 
@@ -56,7 +64,6 @@ html, body {
 .ambient-glow {
   position: fixed;
   border-radius: 50%;
-  filter: blur(100px);
   pointer-events: none;
   z-index: 0;
   opacity: 0.6;
@@ -161,9 +168,7 @@ section {
    KART PANELLERİ (GLASSMORPHISM)
    ======================================================== */
 .card-panel {
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(20, 25, 38, 0.94);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
   padding: 18px;
@@ -617,8 +622,8 @@ details#su summary {
 }
 
 @keyframes swapGlow {
-  from { transform: scale(1); filter: brightness(1); }
-  to { transform: scale(1.04); filter: brightness(1.2); }
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(1.04); opacity: 0.8; }
 }
 
 /* 3D Kart Alanı */
@@ -633,7 +638,7 @@ details#su summary {
   width: min(72vw, 290px);
   aspect-ratio: 442/686;
   margin: 4px auto;
-  touch-action: none;
+  touch-action: pan-y; /* dikey kaydırma kartın üzerinden de çalışsın */
   cursor: pointer;
 }
 
@@ -809,9 +814,7 @@ body.cmode #cs {
 #ov {
   position: fixed;
   inset: 0;
-  background: rgba(6, 8, 14, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(6, 8, 14, 0.92);
   display: none;
   align-items: center;
   justify-content: center;
