@@ -216,7 +216,8 @@ const status = t => { $('cs').textContent = t || ''; };
 function openPeer(id, cb) {
   const g = ++pg;
   if (peer) try { peer.destroy(); } catch (e) {}
-  const P = NET === 'local' ? LocalPeer : Peer;
+  LocalPeer.url = NET === 'relay' ? (window.RELAY_URL || '').replace(/\/+$/, '') + '/ws?room=' + encodeURIComponent(code) : '';
+  const P = (NET === 'local' || NET === 'relay') ? LocalPeer : Peer;
   peer = id ? new P(id) : new P();
   peer.on('open', () => { if (g === pg) cb(); });
   peer.on('error', e => {
@@ -910,6 +911,9 @@ function start(isH) {
   if (NET === 'local' && location.protocol === 'https:') {
     return msg('Yerel ağ modu için bu sayfayı PC adresinden aç: http://PC-IP:8080');
   }
+  if (NET === 'relay' && !window.RELAY_URL) {
+    return msg('Bulut aracısı adresi ayarlı değil (config.js). Başka bir bağlantı türü seçin.');
+  }
 
   clearTimeout(rt); clearInterval(tk); gen++; isHost = false; H = null; joined = false; lostN = 0; joinFresh = !isH;
   if (isH) {
@@ -1008,7 +1012,7 @@ window.addEventListener('error', e => {
 });
 
 // PC sunucusundan açıldıysa yerel ağ otomatik önerilir
-$('net').value = (me && me.net) || (/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname) || location.hostname === 'localhost' || location.hostname.endsWith('.local') ? 'local' : 'cloud');
+$('net').value = (me && me.net) || (/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname) || location.hostname === 'localhost' || location.hostname.endsWith('.local') ? 'local' : (window.RELAY_URL ? 'relay' : 'cloud'));
 
 if (me) {
   try {

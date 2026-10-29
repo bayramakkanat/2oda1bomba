@@ -1,0 +1,12 @@
+name = "oda-bomba-hub"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+# Ücretsiz planda sadece SQLite tabanlı Durable Object kullanılabilir
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]

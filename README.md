@@ -81,6 +81,22 @@ Bu sürümde telefon çoğu zaman masada duracağı için:
 
 ---
 
+## Bulut Aracısı (Cloudflare, önerilen: 20+ kişi)
+
+PeerJS'in ücretsiz buluttaki sınırlarını (TURN yok, tek telefonda çok bağlantı) aşmak için mesajlar ücretsiz bir Cloudflare Worker üzerinden akar. Oyun sırasında sadece telefon yeter.
+
+**Tek seferlik kurulum (PC'de):**
+1. Cloudflare hesabı açın (ücretsiz plan).
+2. Terminalde `bulut` klasörüne gidin: `cd $env:USERPROFILE\Desktop\2oda1bomba\bulut` (PowerShell) ya da `cd %USERPROFILE%\Desktop\2oda1bomba\bulut` (Komut İstemi). PowerShell'de `npx` "komut dosyaları çalıştırılamaz" hatası verirse `npx.cmd` yazın.
+3. `npx wrangler login` (tarayıcı açılır, izin verin).
+4. `npx wrangler deploy` (ilk seferde `workers.dev` alt alan adı seçilmesi istenebilir). Çıktıdaki adres örneğin `https://oda-bomba-hub.KULLANICI.workers.dev` olur. Tarayıcıda `/health` eklerseniz `ok` yazmalı.
+5. `config.js` içine adresi `wss://` ile yazın: `window.RELAY_URL = 'wss://oda-bomba-hub.KULLANICI.workers.dev';`
+6. Değişiklikleri GitHub'a gönderin, Vercel yeniden yayınlar.
+
+Menüde **Bağlantı Türü: Bulut (Cloudflare)** seçilir. Her oyun kodu ayrı bir oda olur. Moderatör ve oyuncular aynı bağlantı türünü seçmelidir.
+
+---
+
 ## Yerel Ağ (İnternetsiz) Mod
 
 Etkinlik ortamında 15-20 telefonla kopmasız oynamak için önerilir:

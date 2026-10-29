@@ -47,7 +47,8 @@
         <div class="field-group">
           <label class="field-label" for="net">Bağlantı Türü</label>
           <select id="net">
-            <option value="cloud">🌐 İnternet (Varsayılan - PeerJS)</option>
+            <option value="relay">☁️ Bulut (Cloudflare, 20+ kişi için önerilir)</option>
+            <option value="cloud">🌐 İnternet (PeerJS)</option>
             <option value="local">💻 Yerel Ağ (PC Sunucusu, İnternetsiz)</option>
           </select>
         </div>
@@ -175,6 +176,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="config.js"></script>
   <script src="local.js"></script>
   <script src="app.js"></script>
 </body>
