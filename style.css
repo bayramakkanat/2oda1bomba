@@ -634,12 +634,25 @@ details#su summary {
 }
 
 .stage {
+  position: relative;
   perspective: 1200px;
   width: min(72vw, 290px);
   aspect-ratio: 442/686;
   margin: 4px auto;
-  touch-action: pan-y; /* dikey kaydırma kartın üzerinden de çalışsın */
+  touch-action: manipulation; /* sayfanın geri kalanıyla aynı: dikey ve çapraz kaydırma kartın üzerinden de çalışır */
+  -webkit-tap-highlight-color: transparent;
   cursor: pointer;
+}
+
+/* Gölge dönen yüzlere değil sabit bir katmana verilir: kart dönerken ve kaydırma sırasında gölge yeniden boyanmaz */
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .card {
@@ -647,6 +660,7 @@ details#su summary {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
+  will-change: transform;
   transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -664,7 +678,7 @@ details#su summary {
   -webkit-backface-visibility: hidden;
   object-fit: cover;
   pointer-events: none;
-  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .front {
