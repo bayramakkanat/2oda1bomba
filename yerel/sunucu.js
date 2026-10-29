@@ -4,7 +4,7 @@
 const http=require('http'),fs=require('fs'),path=require('path'),os=require('os');
 const {WebSocketServer}=require('ws');
 const ROOT=path.resolve(__dirname,'..'),PORT=+process.env.PORT||8080;
-const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.json':'application/json','.ico':'image/x-icon','.webp':'image/webp'};
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.json':'application/json','.ico':'image/x-icon','.webp':'image/webp','.webmanifest':'application/manifest+json'};
 
 const srv=http.createServer((req,res)=>{
  let u;try{u=decodeURIComponent(req.url.split('?')[0])}catch(e){res.writeHead(400);return res.end()}

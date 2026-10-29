@@ -197,6 +197,25 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && (me || DEMO)) wl();
 });
 
+// Telefonlarda tam ekran: tarayıcı kuralı gereği sadece dokunuş sırasında istenebilir (iPhone Safari desteklemez, README'de "Ana Ekrana Ekle" anlatılır)
+const isTouch = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
+function goFullscreen() {
+  try {
+    if (!isTouch() || document.fullscreenElement || document.webkitFullscreenElement) return;
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) return;
+    const pr = req.call(el, { navigationUI: 'hide' });
+    if (pr && pr.then) {
+      pr.then(() => {
+        try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {}); } catch (e) {}
+      }).catch(() => {});
+    }
+  } catch (e) {}
+}
+// Oyuna girildikten sonra, tam ekrandan çıkılmışsa bir sonraki dokunuşta tekrar tam ekrana geçer
+['click', 'touchend'].forEach(ev => document.addEventListener(ev, () => { if (me || DEMO) goFullscreen(); }, { passive: true }));
+
 let gen = 0, pg = 0, joined = false, joinFresh = false, lostN = 0, lvT = 0;
 const LV0 = '← Ana Ekran';
 let peer, conn, rt, isHost = false, code = '', me = LS('2r1b_me'), H = null, C = {}, mode = 'closed';
@@ -282,7 +301,15 @@ function hostInit(resume) {
       c.on('data', m => hostMsg(c, m));
       c.on('close', () => {
         const p = H.players.find(x => x.conn === c);
-        if (p) p.conn = null;
+        if (!p) return;
+        p.conn = null;
+        if (H.phase === 'lobby') {
+          // Lobide ayrılan oyuncu listeden hemen çıkar (tekrar bağlanırsa yeniden eklenir)
+          H.players = H.players.filter(x => x !== p);
+          lobbyAll();
+        } else {
+          hostRender(); // oyun sırasında koltuğu korunur, moderatör panelinde "bağlantısı kopan" sayısı görünür
+        }
       });
     });
     if (H.phase === 'lobby') {
@@ -524,7 +551,8 @@ function hostRender() {
   }[H.stage] || '';
 
   const s = left();
-  $('hinfo').textContent = (TEST ? '[TEST MODU] ' : '') + `${stageName}` + (s ? ` · Kalan: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '') + ` · Toplam Oyuncu: ${H.players.length}`;
+  const off = H.players.filter(p => !p.self && !p.bot && !(p.conn && p.conn.open)).length;
+  $('hinfo').textContent = (TEST ? '[TEST MODU] ' : '') + `${stageName}` + (s ? ` · Kalan: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '') + ` · Toplam Oyuncu: ${H.players.length}` + (off ? ` · ⚠ Bağlantısı kopan: ${off}` : '');
 
   $('bNext').hidden = !['setup', 'round', 'swap'].includes(H.stage);
   if (H.stage === 'setup') {
@@ -904,6 +932,7 @@ function updateSum(n) {
 function start(isH) {
   const name = $('nm').value.trim();
   if (!name) return msg('Lütfen adını yaz.');
+  goFullscreen();
   unlockAudio();
   wl();
 

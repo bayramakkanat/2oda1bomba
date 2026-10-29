@@ -59,8 +59,11 @@ Başkan + Bombacı her zaman vardır. **Ajanlar** (Mavi + Kırmızı) ve **Casus
 
 ---
 
-## Ekran Uyumasın
+## Ekran Uyumasın ve Tam Ekran
 
+**Tam ekran:** Android Chrome'da oyuna katılırken ya da oyun kurarken otomatik tam ekrana geçilir (tarayıcı kuralı gereği bu ancak dokunuşla yapılabilir). Oyuncu tam ekrandan çıkarsa bir sonraki dokunuşta yeniden tam ekran olur. **iPhone Safari tam ekran API'sini desteklemez:** Paylaş düğmesi → "Ana Ekrana Ekle" ile oyunu uygulama gibi ekledikten sonra oradan açın, adres çubuğu kaybolur. Android'de de aynı yöntem (⋮ menü → "Ana ekrana ekle") tam ekran uygulama açar.
+
+**Ekran uyumasın:**
 Bu sürümde telefon çoğu zaman masada duracağı için:
 - Uygulama ekranı açık tutmayı (wake lock) kendiliğinden ister ve sayfa tekrar görünür olunca yeniler.
 - Yine de telefonun **Otomatik Kilit / Ekran Zaman Aşımı** süresini oyun için uzatmak (en az 5 dk) önerilir. Ekran kapanırsa ses ve titreşim gelmez, bağlantı da kopabilir.
