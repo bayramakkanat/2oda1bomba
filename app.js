@@ -228,6 +228,17 @@ let peer, conn, rt, isHost = false, code = '', me = LS('2r1b_me'), H = null, C =
 let tk = 0, cdI = 0, hideT = 0, fadeT = 0, shareFade = 0;
 let DEMO = false;
 
+/* ----- Saat senkronu: oyuncu saati moderatör saatine göre hizalanır -----
+   Eskiden süre "mesajın geldiği an + kalan süre" diye hesaplanıyordu, bu yüzden gecikmeli gelen bir mesaj o turun süresince oyuncuyu geride tutuyordu.
+   Şimdi moderatörün mutlak bitiş zamanı kullanılır; gecikme kalsa bile sayaç doğru süreyi gösterir ve alarmlar aynı anda çalınır. */
+let clockOff = 0, clockBest = Infinity, clockSynced = false, pingT = 0;
+function pingLoop(n) {
+  if (n === 0) { clearTimeout(pingT); clockBest = Infinity; clockSynced = false; }
+  if (!conn || !conn.open || isHost) return;
+  try { conn.send({ t: 'ping', c: Date.now() }); } catch (e) {}
+  pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
+}
+
 let NET = (me && me.net) || 'cloud';
 
 const show = n => {
@@ -267,7 +278,7 @@ function leaveToHome(text, notify) {
     try { bcast({ t: 'bye' }); } catch (e) {}
   }
   gen++; pg++;
-  clearInterval(tk); clearTimeout(rt); clearInterval(cdI); clearTimeout(hideT); clearTimeout(fadeT);
+  clearInterval(tk); clearTimeout(rt); clearInterval(cdI); clearTimeout(hideT); clearTimeout(fadeT); clearTimeout(pingT);
   try { if (conn) conn.close(); } catch (e) {}
   setTimeout(() => { try { if (pr) pr.destroy(); } catch (e) {} }, notify ? 500 : 0);
 
@@ -345,6 +356,7 @@ function lobbyAll() {
 }
 
 function hostMsg(c, m) {
+  if (m.t === 'ping') { try { c.send({ t: 'pong', c: m.c, s: Date.now() }); } catch (e) {} return; }
   if (m.t !== 'join') return;
 
   let p = H.players.find(x => x.pid === m.pid);
@@ -376,6 +388,7 @@ function sendState(p) {
     last: H.round === H.rounds,
     stage: H.stage,
     left: left(),
+    hostEnd: H.endAt || 0,
     final: H.final,
     result: H.stage === 'result' ? H.result : null
   });
@@ -595,6 +608,7 @@ function connectClient() {
       if (g !== gen || !me) return;
       status('');
       conn.send({ t: 'join', pid: me.pid, name: me.name });
+      pingLoop(0);
     });
     conn.on('data', m => { if (g === gen) onC(m); });
     conn.on('close', L);
@@ -631,6 +645,15 @@ function renderLobby(names) {
 }
 
 function onC(m) {
+  if (m.t === 'pong') {
+    const now = Date.now(), rtt = now - m.c;
+    if (rtt >= 0 && rtt <= clockBest) { // en kısa gidi-dönüş süreli ölçüm en güvenilirdir
+      clockBest = rtt;
+      clockOff = m.s + rtt / 2 - now; // moderatör saati = yerel saat + clockOff
+      clockSynced = true;
+    }
+    return;
+  }
   if (m.t === 'lobby' || m.t === 'state') { joined = true; lostN = 0; }
   if (m.t === 'bye') { if (!isHost) leaveToHome('Moderatör oyunu kapattı.'); return; }
   if (m.t === 'lobby') {
@@ -853,7 +876,7 @@ function setT(T, text, cls) {
 setInterval(() => {
   const T = $('timer');
   const stage = isHost && H ? H.stage : C.stage;
-  const end = isHost && H ? H.endAt : C.endAt;
+  const end = isHost && H ? H.endAt : (clockSynced && C.hostEnd ? C.hostEnd - clockOff : C.endAt);
   const rd = isHost && H ? H.round : C.round;
 
   if (!stage || !end || ['ready', 'result'].includes(stage)) {
