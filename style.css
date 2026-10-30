@@ -795,7 +795,7 @@ details#su summary {
 #cdn {
   position: absolute;
   top: 12px;
-  right: 12px;
+  left: 12px;
   min-width: 50px;
   height: 50px;
   line-height: 50px;
@@ -810,6 +810,9 @@ details#su summary {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 #cdn:empty { display: none; }
+
+/* Moderatör oyun ekranındayken üstteki Çıkış / Ana Ekran düğmesi hiç görünmez (masasında Yeni Oyun ve Ana Menüye Dön var) */
+body.host-game #lv { display: none !important; }
 
 /* Renk veya Kart Paylaşımı Modunda UI Gizleme */
 body.cmode #lv,

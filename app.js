@@ -241,13 +241,16 @@ function pingLoop(n) {
 
 let NET = (me && me.net) || 'cloud';
 
+const APP_VERSION = '0.5.3'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
   $('lv').hidden = n !== 'lobby';
+  document.body.classList.toggle('host-game', n === 'game' && isHost); // moderatör oyun ekranında üstte çıkış düğmesi hiç görünmez
   if (n !== 'home') wl();
 };
 const msg = t => { $('herr').textContent = t; };
-const status = t => { $('cs').textContent = t || ''; };
+const status = t => { $('cs').textContent = t || ('v' + APP_VERSION); };
 
 function openPeer(id, cb) {
   const g = ++pg;
@@ -560,7 +563,7 @@ function hostRender() {
   if (!isHost || !H) return;
   $('hostp').hidden = false;
   $('cardbox').hidden = !me.play;
-  $('lv').hidden = H.stage !== 'result';
+  $('lv').hidden = true; // moderatörün masasında Yeni Oyun ve Ana Menüye Dön düğmeleri var
   $('bHome').hidden = H.stage !== 'result';
 
   const stageName = {
@@ -674,7 +677,7 @@ function onC(m) {
     show('game');
     draw();
     panel();
-    $('lv').hidden = m.stage !== 'result'; // oyun bitince çıkış düğmesi açılır
+    $('lv').hidden = isHost || m.stage !== 'result'; // oyuncular için oyun bitince çıkış düğmesi açılır (moderatörün masasında zaten Ana Menüye Dön var)
 
     $('room').textContent = `BAŞLANGIÇ: ${m.initRoom} ODASI`;
     $('room').className = m.initRoom === 'A' ? 'room-badge room-a' : 'room-badge room-b';
@@ -1096,6 +1099,7 @@ window.addEventListener('error', e => {
 });
 
 // PC sunucusundan açıldıysa yerel ağ otomatik önerilir
+status('');
 $('net').value = (me && me.net) || (/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname) || location.hostname === 'localhost' || location.hostname.endsWith('.local') ? 'local' : (window.RELAY_URL ? 'relay' : 'cloud'));
 
 if (me) {
