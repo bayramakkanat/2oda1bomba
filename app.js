@@ -241,7 +241,7 @@ function pingLoop(n) {
 
 let NET = (me && me.net) || 'cloud';
 
-const APP_VERSION = '0.5.3'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.5.4'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -480,11 +480,11 @@ function endRound() {
   } else {
     // Turlar arası rehine seçimi ve oda değişimi
     H.stage = 'swap';
-    H.endAt = Date.now() + SWAP_SECS * 1000;
+    H.endAt = 0; // Süre yok: rehine geçişi bitince moderatör "Rehineler Geçti, n. Turu Başlat" der (sorular, itirazlar, gecikmeler için beklenir)
     persist();
     pushAll();
     startTick();
-    bcast({ t: 'sound', s: 'end', k: 'end-' + H.round, msg: `${H.round}. TUR BİTTİ!\n${need()} rehine seçip odaları değiştirin.` });
+    bcast({ t: 'sound', s: 'end', k: 'end-' + H.round, msg: `${H.round}. TUR BİTTİ!\n${need()} rehine seçip odaları değiştirin. Hazır olunca moderatör yeni turu başlatacak.` });
   }
 }
 
@@ -554,7 +554,7 @@ function tick() {
   if (!H) return;
   if (H.endAt && Date.now() >= H.endAt) {
     if (H.stage === 'round') endRound();
-    else if (H.stage === 'swap') startRound(H.round + 1);
+    // Rehine geçişinden sonra yeni tur kendiliğinden başlamaz: moderatör "Rehineler Geçti" düğmesine basar
   }
   hostRender();
 }
@@ -882,7 +882,7 @@ setInterval(() => {
   const end = isHost && H ? H.endAt : (clockSynced && C.hostEnd ? C.hostEnd - clockOff : C.endAt);
   const rd = isHost && H ? H.round : C.round;
 
-  if (!stage || !end || ['ready', 'result'].includes(stage)) {
+  if (!stage || (!end && stage !== 'swap') || ['ready', 'result'].includes(stage)) {
     if (stage !== 'result') setT(T, '');
     return;
   }
@@ -894,8 +894,8 @@ setInterval(() => {
     setT(T, `Kalan Süre: ${timeStr}`, 'game-timer');
     if (s === 0 && rd) alarm('end', 'end-' + rd); // moderatör mesajı gecikse bile süre dolunca çalar
   } else if (stage === 'swap') {
-    setT(T, `⏳ Rehine Değişimi: ${timeStr}`, 'game-timer swap');
-    if (s === 0 && rd) alarm('start', 'start-' + (rd + 1));
+    setT(T, '⏳ Rehine Geçişi Sürüyor', 'game-timer swap'); // süre yok, moderatör yeni turu başlatana kadar bekler
+    // yeni tur moderatör başlatınca sesli uyarı ('start') gelir
   }
 }, 250);
 

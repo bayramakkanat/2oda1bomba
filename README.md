@@ -10,7 +10,7 @@ Bu uygulama, **Two Rooms and a Boom (2 Oda 1 Bomba)** oyununu ekrana boğmadan o
 
 1. **Kurulum:** Moderatör oyunu kurar (isteğe bağlı kendi kodunu yazar), oyuncular kodla katılır. Moderatör **Tur Sayısı**nı seçer ve **Kartları Dağıt** der. En az 6 oyuncu gerekir. Oyun **her zaman çift sayıda oyuncuyla** oynanır: tek sayıda kişi varsa moderatör oyuna girmeden yönetir (dağıtırken onay sorulur).
 2. **Başlangıç odası:** Herkesin ekranında A ya da B odası yazar. Oyuncular odalarına geçer, moderatör **1. Turu Başlat** der.
-3. **Tur:** Tüm telefonlarda aynı geri sayım çalar. Süre dolunca ses ve titreşim gelir: *"n. TUR BİTTİ! X rehine seçip odaları değiştirin."* Oda liderleri rehineleri seçer ve gönderir. Bu aşama için **45 saniyelik** sayaç çalışır, bitince yeni tur kendiliğinden başlar (moderatör erken de başlatabilir).
+3. **Tur:** Tüm telefonlarda aynı geri sayım çalar. Süre dolunca ses ve titreşim gelir: *"n. TUR BİTTİ! X rehine seçip odaları değiştirin."* Oda liderleri rehineleri seçer ve gönderir. Bu aşamada **süre yoktur**: herkes yerine geçince moderatör **"Rehineler Geçti, n. Turu Başlat"** der ve yeni tur ilk tur gibi elle başlar. Sorular ve itirazlar için beklenebilir.
 4. **Son tur:** Süre dolunca *"OYUN BİTTİ! Son X rehineyi odalarına gönderin, sonra herkes tek bir salonda toplansın."* mesajı gelir. Moderatör **Sonuçları ve Kartları Aç** der, herkesin kartı açılır.
 5. **Kazanan (fiziksel):** Başkan ve Bombacı **aynı odadaysa KIRMIZI**, **farklı odalardaysa MAVİ** kazanır. Uygulama odaları takip etmez, sonuç ekranı kuralı hatırlatır ve herkesin rolünü listeler.
 
@@ -52,8 +52,8 @@ Başkan + Bombacı her zaman vardır. **Ajanlar** (Mavi + Kırmızı) ve **Casus
 ## Moderatör Düğmeleri
 
 - **Herkes Odasında, 1. Turu Başlat:** Odalara geçiş bitince ilk turun sayaçlarını başlatır.
-- **Turu Erken Bitir:** Sadece bir tur sürürken görünür, onay sorar. Tur süresini keser, herkese "TUR BİTTİ" alarmını gönderir ve rehine geçişi sayacını (45 sn) başlatır. Normal oyunda gerekmez: yanlışlıkla erken başlatıldıysa, herkes anlaşıp turu kapatmak istiyorsa ya da test sırasında işe yarar. Son turda basılırsa doğrudan "OYUN BİTTİ" aşamasına geçer.
-- **Rehineler Geçti, n. Turu Başlat:** Rehine geçişi sırasında görünür, kalan süreyi beklemeden yeni turu başlatır.
+- **Turu Erken Bitir:** Sadece bir tur sürürken görünür, onay sorar. Tur süresini keser, herkese "TUR BİTTİ" alarmını gönderir ve rehine geçişi aşamasına alır (süre yok). Normal oyunda gerekmez: yanlışlıkla erken başlatıldıysa, herkes anlaşıp turu kapatmak istiyorsa ya da test sırasında işe yarar. Son turda basılırsa doğrudan "OYUN BİTTİ" aşamasına geçer.
+- **Rehineler Geçti, n. Turu Başlat:** Rehine geçişi aşamasında görünür; herkes odasına geçince yeni turu başlatır (yeni tur otomatik başlamaz).
 - **Sonuçları ve Kartları Aç:** Son rehineler gönderilip herkes toplanınca tüm kartları açar.
 - **Yeni Oyun:** Lobiye döner, kartlar yeniden dağıtılır.
 
