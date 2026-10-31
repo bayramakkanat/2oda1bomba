@@ -313,8 +313,9 @@ function hostInit(resume) {
   openPeer('2r1b-' + code, () => {
     status('');
     peer.on('connection', c => {
-      c.on('data', m => hostMsg(c, m));
+      c.on('data', m => { if (H) hostMsg(c, m); });
       c.on('close', () => {
+        if (!H) return; // oyun kapatıldıktan sonra gelen kapanış haberleri yok sayılır
         const p = H.players.find(x => x.conn === c);
         if (!p) return;
         p.conn = null;
@@ -354,6 +355,7 @@ function lobbyAll() {
 }
 
 function hostMsg(c, m) {
+  if (!H) return;
   if (m.t === 'ping') { try { c.send({ t: 'pong', c: m.c, s: Date.now() }); } catch (e) {} return; }
   if (m.t !== 'join') return;
 
