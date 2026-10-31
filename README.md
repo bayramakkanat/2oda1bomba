@@ -1,4 +1,4 @@
-# 2 Oda 1 Bomba – Telefon Kart & Ortak Saat Uygulaması (v0.4 – Fiziksel Dostu, Gri Rol Yok)
+# 2 Oda 1 Bomba – Telefon Kart & Ortak Saat Uygulaması (v0.6 – Fiziksel Dostu, Gri Rol Yok)
 
 Bu uygulama, **Two Rooms and a Boom (2 Oda 1 Bomba)** oyununu ekrana boğmadan oynatmak için yapılmış bir yardımcıdır. Telefon sadece **cebindeki gizli kart** ve **odalar arasında ortak geri sayım saati** olarak çalışır. Lider seçimi, darbe girişimleri, rehine pazarlığı, Ajan sorguları ve oda değişimi tamamen yüz yüze, fiziksel olarak yapılır.
 
@@ -76,7 +76,7 @@ Bu sürümde telefon çoğu zaman masada duracağı için:
 ## Ana Menü Seçenekleri
 
 - **Oyun kodu:** Kurarken boş bırakılırsa 4 harfli rastgele kod verilir, istersen kendin yazabilirsin (en fazla 20 harf/rakam, Türkçe harfler ASCII'ye çevrilir).
-- **Bağlantı Türü:** İnternet (varsayılan) ya da Yerel Ağ (aşağıda).
+- **Bağlantı:** Tüm oyuncular ve moderatör aynı Cloudflare bulut aracısı üzerinden bağlanır (seçim gerekmez, aşağıdaki bölüme bakın).
 - **Test modu:** Süreler çok kısalır, en az 4 oyuncuyla başlanır, lobide **+ Test Oyuncusu** düğmesi çıkar.
 - **Kart demosu:** Oyun kurmadan tüm kartları görüp basılı tutma, renk ve kart paylaşımını deneyebilirsin.
 - **Karakter seti:** Lobide Ajan, Casus ve Sarhoş açılıp kapatılır, özet satırı deste dağılımını canlı gösterir.
@@ -84,9 +84,9 @@ Bu sürümde telefon çoğu zaman masada duracağı için:
 
 ---
 
-## Bulut Aracısı (Cloudflare, önerilen: 20+ kişi)
+## Bulut Aracısı (Cloudflare)
 
-PeerJS'in ücretsiz buluttaki sınırlarını (TURN yok, tek telefonda çok bağlantı) aşmak için mesajlar ücretsiz bir Cloudflare Worker üzerinden akar. Oyun sırasında sadece telefon yeter.
+Tüm mesajlar ücretsiz bir Cloudflare Worker üzerinden akar (20+ kişi sorunsuz). Oyun sırasında sadece telefon yeter.
 
 **Tek seferlik kurulum (PC'de):**
 1. Cloudflare hesabı açın (ücretsiz plan).
@@ -96,20 +96,7 @@ PeerJS'in ücretsiz buluttaki sınırlarını (TURN yok, tek telefonda çok bağ
 5. `config.js` içine adresi `wss://` ile yazın: `window.RELAY_URL = 'wss://oda-bomba-hub.KULLANICI.workers.dev';`
 6. Değişiklikleri GitHub'a gönderin, Vercel yeniden yayınlar.
 
-Menüde **Bağlantı Türü: Bulut (Cloudflare)** seçilir. Her oyun kodu ayrı bir oda olur. Moderatör ve oyuncular aynı bağlantı türünü seçmelidir.
-
----
-
-## Yerel Ağ (İnternetsiz) Mod
-
-Etkinlik ortamında 15-20 telefonla kopmasız oynamak için önerilir:
-
-1. PC'de **Mobil Etkin Nokta** açın (2.4 GHz bandı seçin).
-2. PC'de `yerel/YEREL-OYUN-BASLAT.bat` dosyasını çalıştırın (İLK KEZ internetle; `ws` paketini indirir, Node.js kurulu olmalı).
-3. Konsolda yazan adresi (örn. `http://192.168.137.1:8080`) telefonlar tarayıcıdan açar. Adresi QR koda çevirmek kolaylık sağlar.
-4. Ana menüde **Bağlantı Türü: Yerel Ağ** seçili olmalı (PC adresinden açıldıysa kendiliğinden seçilir).
-
-Yerel sunucu internet olmadığında açılışı yavaşlatmasın diye Google Fonts ve PeerJS bağlantılarını sayfadan çıkarır.
+Her oyun kodu ayrı bir oda olur.
 
 ---
 

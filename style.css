@@ -471,6 +471,21 @@ ul#ll li::before {
   flex-shrink: 0;
 }
 
+ul#ll li .nm {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+ul#ll li .kick {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 999px;
+  color: #fca5a5;
+}
+
 .host-controls-card {
   border-color: rgba(59, 130, 246, 0.25);
   background: rgba(18, 24, 40, 0.9);
@@ -777,10 +792,11 @@ details#su summary {
 
 .host-action-btns {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .host-action-btns button {
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .btn-accent {

@@ -1,7 +1,7 @@
 /* 2 Oda 1 Bomba – bulut aracısı (Cloudflare Workers + Durable Object)
    Telefonlar WebSocket ile buraya bağlanır; mesajlar odanın moderatörü ile oyuncular arasında iletilir.
    Her oyun kodu ayrı bir Durable Object'tir, oyunlar birbirine karışmaz.
-   Protokol yerel/sunucu.js ile aynıdır (reg, con, ack, d, cl, err, open). */
+   Protokol relay.js (istemci) ile uyumludur (reg, con, ack, d, cl, err, open). */
 import { DurableObject } from 'cloudflare:workers';
 
 export default {

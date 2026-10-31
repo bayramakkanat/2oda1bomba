@@ -239,9 +239,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-let NET = (me && me.net) || 'cloud';
-
-const APP_VERSION = '0.5.4'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.0'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -255,9 +253,7 @@ const status = t => { $('cs').textContent = t || ('v' + APP_VERSION); };
 function openPeer(id, cb) {
   const g = ++pg;
   if (peer) try { peer.destroy(); } catch (e) {}
-  LocalPeer.url = NET === 'relay' ? (window.RELAY_URL || '').replace(/\/+$/, '') + '/ws?room=' + encodeURIComponent(code) : '';
-  const P = (NET === 'local' || NET === 'relay') ? LocalPeer : Peer;
-  peer = id ? new P(id) : new P();
+  peer = new RelayPeer(id, (window.RELAY_URL || '').replace(/\/+$/, '') + '/ws?room=' + encodeURIComponent(code));
   peer.on('open', () => { if (g === pg) cb(); });
   peer.on('error', e => {
     if (g !== pg) return;
@@ -311,7 +307,6 @@ function hostInit(resume) {
     players: [], phase: 'lobby', round: 1, rounds: 3, stage: null,
     endAt: 0, final: false, test: !!$('tm').checked, result: null
   };
-  if (H.stage === 'gamble') H.stage = 'ready'; // eski sürümden kalan kayıt
   applyTest(H.test);
   if (!resume && me.play) H.players.push({ pid: me.pid, name: me.name, self: true });
 
@@ -379,6 +374,18 @@ function hostMsg(c, m) {
   persist();
 }
 
+// Lobide moderatör bir oyuncuyu listeden çıkarabilir (yanlış isim, istenmeyen katılım)
+function kick(pid) {
+  const p = byPid(pid);
+  if (!p || p.self || !H || H.phase !== 'lobby') return;
+  if (!confirm(`${p.name} oyundan çıkarılsın mı?`)) return;
+  H.players = H.players.filter(x => x !== p);
+  if (p.conn && p.conn.open) {
+    try { p.conn.send({ t: 'err', m: 'Moderatör seni oyundan çıkardı.' }); } catch (e) {}
+  }
+  lobbyAll();
+}
+
 function sendState(p) {
   if (!p.card) return;
   send(p, {
@@ -392,6 +399,8 @@ function sendState(p) {
     stage: H.stage,
     left: left(),
     hostEnd: H.endAt || 0,
+    paused: !!H.paused,
+    pausedLeft: H.pausedLeft || 0,
     final: H.final,
     result: H.stage === 'result' ? H.result : null
   });
@@ -452,6 +461,8 @@ function startRound(rNum) {
   H.round = rNum;
   H.stage = 'round';
   H.endAt = Date.now() + roundDuration(H.rounds, H.round) * 1000;
+  H.paused = false;
+  H.pausedLeft = 0;
 
   // 3. tura girerken Sarhoş ayılır: kartı gerçek karakterine döner (3 turluk oyunda bu son turdur)
   const drunk = [];
@@ -474,6 +485,8 @@ function startRound(rNum) {
 
 function endRound() {
   clearInterval(tk);
+  H.paused = false;
+  H.pausedLeft = 0;
   if (H.round >= H.rounds) {
     // Tüm turlar tamamlandı: son rehineler gönderilir, sonra sonuçlar açılır
     readyForResult();
@@ -532,7 +545,7 @@ function showResult() {
 function newGame() {
   if (!confirm('Yeni oyun: Kartlar yeniden dağıtılacak. Emin misin?')) return;
   clearInterval(tk);
-  H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.final = false;
+  H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.final = false; H.paused = false; H.pausedLeft = 0;
   H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; delete p.wasDrunk; });
   // Tek sayı yüzünden oyundan çıkarılan moderatör yeni oyunda tekrar oyuncu olarak eklenir
   if (me.wantPlay && !H.players.some(p => p.self)) {
@@ -574,9 +587,11 @@ function hostRender() {
     result: 'Kartlar ve Roller Açıldı'
   }[H.stage] || '';
 
-  const s = left();
-  const off = H.players.filter(p => !p.self && !p.bot && !(p.conn && p.conn.open)).length;
-  $('hinfo').textContent = (TEST ? '[TEST MODU] ' : '') + `${stageName}` + (s ? ` · Kalan: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '') + ` · Toplam Oyuncu: ${H.players.length}` + (off ? ` · ⚠ Bağlantısı kopan: ${off}` : '');
+  const s = H.paused ? Math.ceil((H.pausedLeft || 0) / 1000) : left();
+  const offP = H.players.filter(p => !p.self && !p.bot && !(p.conn && p.conn.open));
+  const off = offP.length;
+  const offTxt = offP.slice(0, 4).map(p => p.name).join(', ') + (off > 4 ? ` +${off - 4}` : '');
+  $('hinfo').textContent = (TEST ? '[TEST MODU] ' : '') + `${stageName}` + (H.paused ? ' ⏸ DURAKLATILDI' : '') + (s ? ` · Kalan: ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '') + ` · Toplam Oyuncu: ${H.players.length}` + (off ? ` · ⚠ Bağlantısı kopan: ${offTxt}` : '');
 
   $('bNext').hidden = !['setup', 'round', 'swap'].includes(H.stage);
   if (H.stage === 'setup') {
@@ -587,6 +602,8 @@ function hostRender() {
     $('bNext').textContent = 'Turu Erken Bitir';
   }
   $('bEnd').hidden = H.stage !== 'ready';
+  $('bPause').hidden = $('bPlus').hidden = H.stage !== 'round';
+  $('bPause').textContent = H.paused ? '▶ Devam Et' : '⏸ Duraklat';
 
   if (!me.play) {
     const pn = $('panel');
@@ -632,9 +649,21 @@ function renderLobby(names) {
   $('ll').innerHTML = '';
   const pTitle = document.querySelector('#lobby .panel-title');
   if (pTitle) pTitle.textContent = `👥 Katılan Oyuncular (${names.length})`;
-  names.forEach(n => {
+  names.forEach((n, i) => {
     const li = document.createElement('li');
-    li.textContent = n;
+    const nm = document.createElement('span');
+    nm.className = 'nm';
+    nm.textContent = n;
+    li.appendChild(nm);
+    // Moderatör lobide (kendisi hariç) herkesi çıkarabilir; liste sırası H.players ile aynıdır
+    const pl = isHost && H && H.phase === 'lobby' ? H.players[i] : null;
+    if (pl && !pl.self) {
+      const kb = document.createElement('button');
+      kb.className = 'ghost kick';
+      kb.textContent = 'Çıkar';
+      kb.onclick = () => kick(pl.pid);
+      li.appendChild(kb);
+    }
     $('ll').appendChild(li);
   });
   $('hp').hidden = !isHost;
@@ -882,6 +911,13 @@ setInterval(() => {
   const end = isHost && H ? H.endAt : (clockSynced && C.hostEnd ? C.hostEnd - clockOff : C.endAt);
   const rd = isHost && H ? H.round : C.round;
 
+  // Moderatör süreyi duraklattıysa herkes kalan süreyi dondurulmuş görür, alarm çalmaz
+  if (stage === 'round' && (isHost && H ? H.paused : C.paused)) {
+    const pl = Math.ceil(((isHost && H ? H.pausedLeft : C.pausedLeft) || 0) / 1000);
+    setT(T, `⏸ DURAKLATILDI · ${Math.floor(pl / 60)}:${String(pl % 60).padStart(2, '0')}`, 'game-timer swap');
+    return;
+  }
+
   if (!stage || (!end && stage !== 'swap') || ['ready', 'result'].includes(stage)) {
     if (stage !== 'result') setT(T, '');
     return;
@@ -991,24 +1027,18 @@ function start(isH) {
   unlockAudio();
   wl();
 
-  NET = $('net').value;
-  if (NET === 'local' && location.protocol === 'https:') {
-    return msg('Yerel ağ modu için bu sayfayı PC adresinden aç: http://PC-IP:8080');
-  }
-  if (NET === 'relay' && !window.RELAY_URL) {
-    return msg('Bulut aracısı adresi ayarlı değil (config.js). Başka bir bağlantı türü seçin.');
-  }
+  if (!window.RELAY_URL) return msg('Bulut aracısı adresi ayarlı değil (config.js).');
 
   clearTimeout(rt); clearInterval(tk); gen++; isHost = false; H = null; joined = false; lostN = 0; joinFresh = !isH;
   if (isH) {
     code = normCode($('cd').value) || Array.from({ length: 4 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.floor(Math.random() * 23)]).join('');
-    me = { name, pid: uid(), code, host: true, play: !$('np').checked, wantPlay: !$('np').checked, net: NET };
+    me = { name, pid: uid(), code, host: true, play: !$('np').checked, wantPlay: !$('np').checked };
     save('2r1b_me', me);
     hostInit();
   } else {
     code = normCode($('cd').value);
     if (!code) return msg('Oyun kodunu yazmalısın.');
-    me = { name, pid: uid(), code, host: false, play: true, net: NET };
+    me = { name, pid: uid(), code, host: false, play: true };
     save('2r1b_me', me);
     connectClient();
   }
@@ -1024,6 +1054,32 @@ $('bb').onclick = () => {
 };
 
 $('bNext').onclick = nextRoundEarly;
+
+// Süre duraklatma / devam ettirme (itiraz ve kural tartışmaları için). Duraklatırken kalan süre saklanır, devam edince yeni bitiş anı hesaplanır.
+$('bPause').onclick = () => {
+  if (!H || H.stage !== 'round') return;
+  if (H.paused) {
+    H.paused = false;
+    H.endAt = Date.now() + (H.pausedLeft || 0);
+    H.pausedLeft = 0;
+    persist();
+    pushAll();
+    bcast({ t: 'sound', s: 'start', k: 'resume-' + Date.now() });
+  } else {
+    H.pausedLeft = Math.max(0, H.endAt - Date.now());
+    H.paused = true;
+    H.endAt = 0;
+    persist();
+    pushAll();
+  }
+};
+$('bPlus').onclick = () => {
+  if (!H || H.stage !== 'round') return;
+  if (H.paused) H.pausedLeft = (H.pausedLeft || 0) + 30000;
+  else H.endAt += 30000;
+  persist();
+  pushAll();
+};
 $('bEnd').onclick = showResult;
 $('bNew').onclick = newGame;
 $('bHome').onclick = () => {
@@ -1032,6 +1088,9 @@ $('bHome').onclick = () => {
 
 $('bk').src = 'cards/back.jpg';
 $('cover').style.backgroundImage = 'url(cards/back.jpg)';
+
+// Tüm kart görselleri önceden yüklünür: "Rengimi göster" (3 sn) ve Sarhoş'un aydığı anda görsel gecikmesin
+Object.keys(CN).concat('back').forEach(k => { new Image().src = 'cards/' + k + '.jpg'; });
 
 /* ----- Kart Demosu (Menüden Kartları İnceleme) ----- */
 function demoLoad(card) {
@@ -1098,9 +1157,7 @@ window.addEventListener('error', e => {
   if ($('home').hidden) $('lv').hidden = false;
 });
 
-// PC sunucusundan açıldıysa yerel ağ otomatik önerilir
 status('');
-$('net').value = (me && me.net) || (/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname) || location.hostname === 'localhost' || location.hostname.endsWith('.local') ? 'local' : (window.RELAY_URL ? 'relay' : 'cloud'));
 
 if (me) {
   try {
