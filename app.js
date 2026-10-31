@@ -305,7 +305,7 @@ function hostInit(resume) {
   isHost = true;
   H = resume || {
     players: [], phase: 'lobby', round: 1, rounds: 3, stage: null,
-    endAt: 0, final: false, test: !!$('tm').checked, result: null
+    endAt: 0, test: !!$('tm').checked, result: null
   };
   applyTest(H.test);
   if (!resume && me.play) H.players.push({ pid: me.pid, name: me.name, self: true });
@@ -401,13 +401,11 @@ function sendState(p) {
     round: H.round,
     total: H.rounds,
     hostages: need(),
-    last: H.round === H.rounds,
     stage: H.stage,
     left: left(),
     hostEnd: H.endAt || 0,
     paused: !!H.paused,
     pausedLeft: H.pausedLeft || 0,
-    final: H.final,
     result: H.stage === 'result' ? H.result : null
   });
 }
@@ -442,7 +440,6 @@ function deal() {
 
   H.rounds = +$('rn').value;
   H.round = 1;
-  H.final = false;
   H.phase = 'game';
   H.result = null;
 
@@ -541,7 +538,6 @@ function showResult() {
   };
 
   H.stage = 'result';
-  H.final = true;
   H.endAt = 0;
   persist();
   pushAll();
@@ -551,7 +547,7 @@ function showResult() {
 function newGame() {
   if (!confirm('Yeni oyun: Kartlar yeniden dağıtılacak. Emin misin?')) return;
   clearInterval(tk);
-  H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.final = false; H.paused = false; H.pausedLeft = 0;
+  H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.paused = false; H.pausedLeft = 0;
   H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; delete p.wasDrunk; });
   // Tek sayı yüzünden oyundan çıkarılan moderatör yeni oyunda tekrar oyuncu olarak eklenir
   if (me.wantPlay && !H.players.some(p => p.self)) {
