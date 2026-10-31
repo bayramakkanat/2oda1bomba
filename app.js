@@ -357,6 +357,12 @@ function hostMsg(c, m) {
   if (m.t === 'ping') { try { c.send({ t: 'pong', c: m.c, s: Date.now() }); } catch (e) {} return; }
   if (m.t !== 'join') return;
 
+  // Gelen veriye güvenilmez: kimlik ve isim burada temizlenir (çok uzun, boş ya da metin olmayan değerler reddedilir)
+  const jpid = typeof m.pid === 'string' ? m.pid.slice(0, 20) : '';
+  const jname = typeof m.name === 'string' ? m.name.replace(/\s+/g, ' ').trim().slice(0, 16) : '';
+  if (!jpid || !jname) { try { c.send({ t: 'err', m: 'Geçersiz isim.' }); } catch (e) {} return; }
+  m = { ...m, pid: jpid, name: jname };
+
   let p = H.players.find(x => x.pid === m.pid);
   if (!p && H.phase !== 'lobby') {
     // Oyun başladıktan sonra tarayıcı verisi silinen oyuncu: aynı isimle, bağlantısı kopuk koltuğa geri dönebilir

@@ -4,12 +4,22 @@
    Protokol relay.js (istemci) ile uyumludur (reg, con, ack, d, cl, err, open). */
 import { DurableObject } from 'cloudflare:workers';
 
+// Sadece izin verilen sitelerden (ALLOWED_ORIGINS, wrangler.toml) gelen tarayıcı bağlantıları kabul edilir; böylece başkası aracınızı/kotanızı kullanamaz.
+// Liste boşsa kontrol yapılmaz. Yerel test için localhost her zaman serbesttir.
+function originAllowed(request, env) {
+  const list = String(env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!list.length) return true;
+  const origin = request.headers.get('Origin') || '';
+  return list.includes(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/health') return new Response('ok');
     if (url.pathname !== '/ws') return new Response('2 Oda 1 Bomba aracisi calisiyor.');
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket gerekli', { status: 426 });
+    if (!originAllowed(request, env)) return new Response('Bu siteden baglanti kabul edilmiyor', { status: 403 });
 
     const room = (url.searchParams.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
     if (!room) return new Response('Oyun kodu (room) gerekli', { status: 400 });

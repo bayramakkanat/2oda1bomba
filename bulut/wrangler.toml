@@ -2,6 +2,10 @@ name = "oda-bomba-hub"
 main = "worker.js"
 compatibility_date = "2025-06-01"
 
+# Bağlantıya izin verilen siteler (virgülle ayrılır). Başka bir alan adı eklerseniz buraya yazıp yeniden deploy edin.
+[vars]
+ALLOWED_ORIGINS = "https://2oda1bomba.vercel.app"
+
 [[durable_objects.bindings]]
 name = "HUB"
 class_name = "Hub"
