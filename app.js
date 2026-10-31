@@ -793,7 +793,7 @@ function setMode(m, ms, hText) {
   draw();
 
   if (m === 'closed') {
-    $('hint').textContent = DEMO ? 'DEMO: Karta basılı tutarak açabilirsin' : 'Kendi kartına bakmak için basılı tut';
+    $('hint').textContent = DEMO ? '' : 'Kendi kartına bakmak için basılı tut';
   } else if (hText) {
     $('hint').textContent = hText;
   }
@@ -1104,6 +1104,7 @@ function demoLoad(card) {
 
 $('bdemo').onclick = () => {
   DEMO = true;
+  document.body.classList.add('demo'); // demo ekranında boş kalan sayaç satırı gizlenir
   unlockAudio();
   const sel = $('dsel');
   if (!sel.children.length) {
@@ -1129,6 +1130,7 @@ $('dswc').onchange = () => {
 };
 $('dx').onclick = () => {
   DEMO = false;
+  document.body.classList.remove('demo');
   mode = 'closed';
   shareFade = 0;
   clearTimeout(fadeT); clearTimeout(hideT); clearInterval(cdI);

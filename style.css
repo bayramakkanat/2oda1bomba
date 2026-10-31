@@ -641,6 +641,9 @@ details#su summary {
   to { transform: scale(1.04); opacity: 0.8; }
 }
 
+/* Kart demosunda sayaç yok: boş kalan satır kartla üst kısım arasında gereksiz boşluk yaratmasın */
+body.demo .game-timer { display: none; }
+
 /* 3D Kart Alanı */
 #cardbox {
   display: flex;
@@ -727,13 +730,22 @@ details#su summary {
 .game-action-btns {
   display: flex;
   gap: 10px;
-  width: 100%;
+  width: min(72vw, 290px); /* kartla aynı genişlik: düğmeler kartın kenarlarıyla hizalı */
+  margin: 0 auto;
 }
 
 .btn-action {
   flex: 1;
-  padding: 14px 12px;
-  font-size: 14px;
+  padding: 14px 6px;
+  font-size: 13px;
+  line-height: 1.25;
+  gap: 6px;
+}
+
+.btn-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .btn-color {
@@ -748,8 +760,9 @@ details#su summary {
 }
 
 .btn-dot {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: linear-gradient(90deg, var(--blue) 50%, var(--red) 50%);
   display: inline-block;
