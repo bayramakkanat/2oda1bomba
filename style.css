@@ -644,6 +644,9 @@ details#su summary {
 /* Kart demosunda sayaç yok: boş kalan satır kartla üst kısım arasında gereksiz boşluk yaratmasın */
 body.demo .game-timer { display: none; }
 
+/* Kart demosunda kartın altındaki ipucu satırı da yok: boş yer tutmasın, düğmeler karta yaklaşsın */
+body.demo .game-hint { display: none; }
+
 /* 3D Kart Alanı */
 #cardbox {
   display: flex;
