@@ -192,7 +192,19 @@ function wl() {
   } catch (e) {}
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && (me || DEMO)) wl();
+  if (document.visibilityState !== 'visible') return;
+  if (me || DEMO) wl();
+  if (me && !DEMO) {
+    if (!isHost) {
+      if (!conn || !conn.open || !peer || !peer.ws || peer.ws.readyState !== 1) {
+        lost();
+      } else {
+        pingLoop(0); // bağlantı canlılığını anında sına ve saat senkronunu tazele
+      }
+    } else if (isHost && peer && peer.ws && peer.ws.readyState > 1 && !peer.dead) {
+      peer.dial();
+    }
+  }
 });
 
 // Telefonlarda tam ekran: tarayıcı kuralı gereği sadece dokunuş sırasında istenebilir (iPhone Safari desteklemez, README'de "Ana Ekrana Ekle" anlatılır)
@@ -237,7 +249,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.0'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.1'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -773,7 +785,7 @@ function draw() {
   }
 }
 
-function setMode(m, ms, hText) {
+function setMode(m, ms) {
   clearInterval(cdI);
   clearTimeout(hideT);
   $('cdn').textContent = '';
@@ -791,12 +803,6 @@ function setMode(m, ms, hText) {
 
   document.body.classList.toggle('cmode', m === 'color' || m === 'show');
   draw();
-
-  if (m === 'closed') {
-    $('hint').textContent = DEMO ? '' : 'Kendi kartına bakmak için basılı tut';
-  } else if (hText) {
-    $('hint').textContent = hText;
-  }
 
   // Geri sayım sayacı (3..2..1)
   if (ms > 0) {
@@ -822,7 +828,7 @@ st.addEventListener('pointerdown', e => {
   peekX = e.clientX; peekY = e.clientY;
   clearTimeout(peekT);
   peekT = setTimeout(() => {
-    if (mode === 'closed') setMode('peek', 0, 'Parmağını basılı tuttuğun sürece kart açık kalır');
+    if (mode === 'closed') setMode('peek', 0);
   }, PEEK_DELAY);
 });
 
@@ -846,14 +852,14 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 $('bc').onclick = () => {
   wl();
   vib(25);
-  setMode('color', 3000, 'Sadece takım rengin görünüyor (3 sn)');
+  setMode('color', 3000);
 };
 
 // Kartımı göster (5 sn tam kart paylaşımı)
 $('bf').onclick = () => {
   wl();
   vib(25);
-  setMode('show', 5000, 'Kartın herkese açık görünüyor (5 sn)');
+  setMode('show', 5000);
 };
 
 /* ----- Oyun Sonu Paneli ----- */
@@ -1181,4 +1187,11 @@ if (me) {
   } catch (e) {
     leaveToHome('Kayıtlı oyun açılamadı, sıfırlandı.');
   }
+}
+
+// PWA / Çevrimdışı Servis Çalışanı (Service Worker) kaydı
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
 }

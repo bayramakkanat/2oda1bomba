@@ -53,6 +53,7 @@ html, body {
   user-select: none;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -644,9 +645,6 @@ details#su summary {
 /* Kart demosunda sayaç yok: boş kalan satır kartla üst kısım arasında gereksiz boşluk yaratmasın */
 body.demo .game-timer { display: none; }
 
-/* Kart demosunda kartın altındaki ipucu satırı da yok: boş yer tutmasın, düğmeler karta yaklaşsın */
-body.demo .game-hint { display: none; }
-
 /* 3D Kart Alanı */
 #cardbox {
   display: flex;
@@ -720,21 +718,12 @@ body.demo .game-hint { display: none; }
   pointer-events: none;
 }
 
-.game-hint {
-  text-align: center;
-  font-size: 13px;
-  color: var(--fg-muted);
-  min-height: 2.2em;
-  margin: 4px 0;
-  font-weight: 500;
-}
-
 /* Aksiyon Butonları */
 .game-action-btns {
   display: flex;
   gap: 10px;
   width: min(72vw, 290px); /* kartla aynı genişlik: düğmeler kartın kenarlarıyla hizalı */
-  margin: 0 auto;
+  margin: 8px auto 0;
 }
 
 .btn-action {
