@@ -249,7 +249,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.1'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.2'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -296,6 +296,7 @@ function leaveToHome(text, notify) {
   try { localStorage.removeItem('2r1b_me'); localStorage.removeItem('2r1b_host'); } catch (e) {}
 
   status(''); $('ov').style.display = 'none';
+  if ($('ov-cancel')) $('ov-cancel').hidden = true;
   const lv = $('lv'); delete lv.dataset.arm; lv.textContent = LV0;
   $('hostp').hidden = true; $('panel').hidden = true; $('timer').textContent = ''; $('banner').textContent = ''; $('room').textContent = '';
   $('card').classList.remove('flip');
@@ -396,12 +397,13 @@ function hostMsg(c, m) {
 function kick(pid) {
   const p = byPid(pid);
   if (!p || p.self || !H || H.phase !== 'lobby') return;
-  if (!confirm(`${p.name} oyundan çıkarılsın mı?`)) return;
-  H.players = H.players.filter(x => x !== p);
-  if (p.conn && p.conn.open) {
-    try { p.conn.send({ t: 'err', m: 'Moderatör seni oyundan çıkardı.' }); } catch (e) {}
-  }
-  lobbyAll();
+  gameConfirm('Oyuncuyu Çıkar', `${p.name} oyundan çıkarılsın mı?`, { okText: 'Çıkar', danger: true }, () => {
+    H.players = H.players.filter(x => x !== p);
+    if (p.conn && p.conn.open) {
+      try { p.conn.send({ t: 'err', m: 'Moderatör seni oyundan çıkardı.' }); } catch (e) {}
+    }
+    lobbyAll();
+  });
 }
 
 function sendState(p) {
@@ -427,27 +429,12 @@ function pushAll() {
   hostRender();
 }
 
-function deal() {
-  let n = H.players.length;
-  if (n < (TEST ? 4 : 6)) return alert(`En az ${TEST ? 4 : 6} oyuncu gerekli.`);
-
-  // Oyun hep çift sayıda oyuncuyla oynanır: tek sayıda ise moderatör oyuna girmeden yönetir
-  if (n % 2 !== 0) {
-    if (!H.players.some(p => p.self)) {
-      return alert(`Oyuncu sayısı tek (${n}) ve moderatör zaten oynamıyor. Oyun çift sayıda oynanır: bir oyuncu daha katılsın ya da biri çıksın.`);
-    }
-    if (!confirm(`${n} kişi var (tek sayı). Moderatör (sen) oyuna girmeden yönetsin, ${n - 1} kişiyle oynansın mı?`)) return;
-    H.players = H.players.filter(p => !p.self);
-    me.play = false;
-    save('2r1b_me', me);
-    n = H.players.length;
-    if (n < (TEST ? 4 : 6)) return alert(`Moderatör çıkınca ${n} oyuncu kalıyor, en az ${TEST ? 4 : 6} gerekli.`);
-  }
+function executeDeal(n) {
   let r;
   try {
     r = buildDeck(n, readOpts());
   } catch (e) {
-    return alert(e.message);
+    return gameAlert('Deste Hatası', e.message);
   }
 
   H.rounds = +$('rn').value;
@@ -470,6 +457,36 @@ function deal() {
   persist();
   pushAll();
   show('game');
+}
+
+function deal() {
+  let n = H.players.length;
+  const minP = TEST ? 4 : 6;
+  if (n < minP) return gameAlert('Yetersiz Oyuncu', `En az ${minP} oyuncu gerekli.`);
+
+  // Oyun hep çift sayıda oyuncuyla oynanır: tek sayıda ise moderatör oyuna girmeden yönetir
+  if (n % 2 !== 0) {
+    if (!H.players.some(p => p.self)) {
+      return gameAlert('Tek Sayıda Oyuncu', `Oyuncu sayısı tek (${n}) ve moderatör zaten oynamıyor.\nOyun çift sayıda oynanır: bir oyuncu daha katılsın ya da biri çıksın.`);
+    }
+    return gameConfirm(
+      'Tek Sayıda Oyuncu',
+      `${n} kişi var (tek sayı).\nModeratör (sen) oyuna girmeden yönetsin, ${n - 1} kişiyle oynansın mı?`,
+      { okText: 'Yönetici Ol ve Başlat' },
+      () => {
+        H.players = H.players.filter(p => !p.self);
+        me.play = false;
+        save('2r1b_me', me);
+        const rem = H.players.length;
+        if (rem < minP) {
+          return gameAlert('Yetersiz Oyuncu', `Moderatör çıkınca ${rem} oyuncu kalıyor, en az ${minP} gerekli.`);
+        }
+        executeDeal(rem);
+      }
+    );
+  }
+
+  executeDeal(n);
 }
 
 function startRound(rNum) {
@@ -522,9 +539,12 @@ function nextRoundEarly() {
   } else if (H.stage === 'swap') {
     startRound(H.round + 1);
   } else if (H.stage === 'round') {
-    if (confirm('Mevcut tur süresini sonlandırıp rehine değişimine geçilsin mi?')) {
-      endRound();
-    }
+    gameConfirm(
+      'Turu Erken Bitir',
+      'Mevcut tur süresi sonlandırılıp rehine değişimine geçilsin mi?',
+      { okText: 'Turu Bitir', danger: true },
+      () => endRound()
+    );
   }
 }
 
@@ -557,18 +577,24 @@ function showResult() {
 }
 
 function newGame() {
-  if (!confirm('Yeni oyun: Kartlar yeniden dağıtılacak. Emin misin?')) return;
-  clearInterval(tk);
-  H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.paused = false; H.pausedLeft = 0;
-  H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; delete p.wasDrunk; });
-  // Tek sayı yüzünden oyundan çıkarılan moderatör yeni oyunda tekrar oyuncu olarak eklenir
-  if (me.wantPlay && !H.players.some(p => p.self)) {
-    H.players.push({ pid: me.pid, name: me.name, self: true });
-    me.play = true;
-    save('2r1b_me', me);
-  }
-  lobbyAll();
-  $('hostp').hidden = true;
+  gameConfirm(
+    'Yeni Oyun',
+    'Lobiye dönülecek ve kartlar yeniden dağıtılacak. Emin misin?',
+    { okText: 'Yeni Oyun Başlat' },
+    () => {
+      clearInterval(tk);
+      H.stage = null; H.endAt = 0; H.result = null; H.phase = 'lobby'; H.paused = false; H.pausedLeft = 0;
+      H.players.forEach(p => { delete p.card; delete p.initRoom; delete p.sober; delete p.wasDrunk; });
+      // Tek sayı yüzünden oyundan çıkarılan moderatör yeni oyunda tekrar oyuncu olarak eklenir
+      if (me.wantPlay && !H.players.some(p => p.self)) {
+        H.players.push({ pid: me.pid, name: me.name, self: true });
+        me.play = true;
+        save('2r1b_me', me);
+      }
+      lobbyAll();
+      $('hostp').hidden = true;
+    }
+  );
 }
 
 function startTick() {
@@ -747,12 +773,65 @@ function onC(m) {
 }
 
 function ov(t, s, b, fn) {
-  $('ovt').textContent = t;
-  $('ovs').textContent = s;
-  $('ok').textContent = b;
+  $('ovt').textContent = t || '';
+  $('ovs').textContent = s || '';
+  $('ok').textContent = b || 'Tamam';
+  $('ok').className = 'btn-primary ov-btn';
+  const cBtn = $('ov-cancel');
+  if (cBtn) cBtn.hidden = true;
   $('ov').style.display = 'flex';
-  $('ok').onclick = () => { $('ov').style.display = 'none'; fn && fn(); };
+  $('ok').onclick = () => {
+    $('ov').style.display = 'none';
+    if (fn) fn();
+  };
 }
+
+function gameAlert(t, s, b, fn) {
+  ov(t, s, b || 'Tamam', fn);
+}
+
+function gameConfirm(t, s, opts, onOk, onCancel) {
+  if (typeof opts === 'function') {
+    onCancel = onOk;
+    onOk = opts;
+    opts = {};
+  }
+  opts = opts || {};
+  $('ovt').textContent = t || '';
+  $('ovs').textContent = s || '';
+  $('ok').textContent = opts.okText || 'Tamam';
+  $('ok').className = opts.danger ? 'btn-primary ov-btn ov-btn-danger' : 'btn-primary ov-btn';
+
+  const cBtn = $('ov-cancel');
+  if (cBtn) {
+    cBtn.textContent = opts.cancelText || 'Vazgeç';
+    cBtn.hidden = false;
+    cBtn.onclick = () => {
+      $('ov').style.display = 'none';
+      cBtn.hidden = true;
+      if (onCancel) onCancel();
+    };
+  }
+
+  $('ov').style.display = 'flex';
+  $('ok').onclick = () => {
+    $('ov').style.display = 'none';
+    if (cBtn) cBtn.hidden = true;
+    if (onOk) onOk();
+  };
+}
+
+// Modal dışına dokununca kapatma
+$('ov').onclick = e => {
+  if (e.target === $('ov')) {
+    const cBtn = $('ov-cancel');
+    if (cBtn && !cBtn.hidden) cBtn.click();
+    else $('ok').click();
+  }
+};
+
+// Tarayıcının yerel alert penceresini oyunun kendi arayüzüne yönlendir
+window.alert = msg => gameAlert('Bilgilendirme', String(msg || ''));
 
 /* ----- Kart Görseli ve Açılma Modları ----- */
 const CN = {
@@ -1090,7 +1169,12 @@ $('bPlus').onclick = () => {
 $('bEnd').onclick = showResult;
 $('bNew').onclick = newGame;
 $('bHome').onclick = () => {
-  if (confirm('Oyun herkes için kapanacak ve ana menüye döneceksin. Emin misin?')) leaveToHome('Oyun kapatıldı.', true);
+  gameConfirm(
+    'Ana Menüye Dön',
+    'Oyun herkes için kapanacak ve ana menüye döneceksin. Emin misin?',
+    { okText: 'Oyunu Kapat', danger: true },
+    () => leaveToHome('Oyun kapatıldı.', true)
+  );
 };
 
 $('bk').src = 'cards/back.jpg';
@@ -1150,15 +1234,13 @@ $('dx').onclick = () => {
 
 /* ----- Çıkış / Temizleme Butonu ----- */
 $('lv').onclick = () => {
-  const b = $('lv'), h = isHost;
-  if (b.dataset.arm) {
-    clearTimeout(lvT);
-    leaveToHome(h ? 'Oyun kapatıldı.' : 'Oyundan çıkıldı.', h);
-  } else {
-    b.dataset.arm = 1;
-    b.textContent = h ? 'Emin misin? Oyun HERKES için kapanır!' : 'Emin misin? Çıkmak için tekrar bas';
-    lvT = setTimeout(() => { delete b.dataset.arm; b.textContent = LV0; }, 4000);
-  }
+  const h = isHost;
+  gameConfirm(
+    h ? 'Oyunu Kapat' : 'Oyundan Çık',
+    h ? 'Oyun HERKES için kapatılacak ve ana menüye döneceksin. Emin misin?' : 'Lobiden ayrılıp ana menüye dönmek istiyor musun?',
+    { okText: h ? 'Oyunu Kapat' : 'Çıkış Yap', danger: h },
+    () => leaveToHome(h ? 'Oyun kapatıldı.' : 'Oyundan çıkıldı.', h)
+  );
 };
 
 window.addEventListener('error', e => {
