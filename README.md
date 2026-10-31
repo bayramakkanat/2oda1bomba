@@ -31,7 +31,7 @@ Başkan + Bombacı her zaman vardır. **Ajanlar** (Mavi + Kırmızı) ve **Casus
 
 **Çift sayı kuralı:** Moderatör katılıyor ve sayı tekse, "Kartları Dağıt" derken moderatörün oyuna girmeden yönetmesi onaylanır (7 kişi → 6 oyuncu). Yeni oyunda moderatör tekrar oyuncu olarak eklenir. Moderatör zaten oynamıyorsa ve sayı tekse bir oyuncu daha katılmalı ya da biri çıkmalıdır. Böylece iki takım hep eşit kalır.
 
-**Sarhoş:** Rastgele bir düz takım kartının yerine geçer ve **3. turun başında** o karaktere döner (3 turluk oyunda 3. tur zaten son turdur, 5 turlu oyunda 3. turdan itibaren normal rolüyle oynar).
+**Sarhoş:** Orijinal oyundaki gibi destedeki **herhangi bir kartın** (Başkan, Bombacı, Ajan, Casus ya da düz takım kartı) yerine geçer ve **3. turun başında** o karaktere döner (3 turluk oyunda 3. tur zaten son turdur, 5 turlu oyunda 3. turdan itibaren normal rolüyle oynar). Topluluk oyunu ve karakterleri öğrenene kadar Sarhoş işareti kapalı tutulabilir. Sarhoş, Başkan ya da Bombacı çıkarsa sonuç ekranı aydıktan sonraki karta göre Başkan ve Bombacı adını gösterir (en geç son turun başında aydığı için kural değişmez).
 
 **Sarhoş nasıl çalışır (fiziksel hisse yakın):**
 - İlk 2 tur boyunca kartı "SARHOŞ – ??? TAKIM" görünür, renk paylaşımında mor çıkar. Kendi rolünü bilmez.

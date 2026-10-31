@@ -67,7 +67,7 @@ function shuffle(a) {
 /* ----- Deste Planlayıcı (Mavi ve Kırmızı her zaman eşit) -----
    Başkan + Bombacı her zaman var. Ajan ve Casus çift olarak (1 Mavi + 1 Kırmızı) eklenir.
    Oyun hep çift sayıda oyuncuyla oynanır: oyuncu sayısı tekse moderatör oyuna girmeden yönetir (deal()).
-   Sarhoş, rastgele bir düz takım kartının yerine geçer; DRUNK_WAKE_ROUND. turda o karakteri alır. */
+   Sarhoş, destedeki herhangi bir kartın (Başkan ve Bombacı dahil) yerine geçer; DRUNK_WAKE_ROUND. turda o karakteri alır. */
 const OPT_DEF = { ajan: true, casus: true, sarhos: true, blue: '', red: '' };
 
 function planDeck(n, o) {
@@ -98,13 +98,11 @@ function planDeck(n, o) {
   const cards = [...d, ...Array(blue).fill('takim_mavi'), ...Array(red).fill('takim_kirmizi')];
 
   let sober = null;
-  if (o.sarhos) {
-    const plain = cards.map((c, i) => (c.startsWith('takim') ? i : -1)).filter(i => i >= 0);
-    if (plain.length) {
-      const idx = plain[Math.floor(Math.random() * plain.length)];
-      sober = cards[idx];
-      cards[idx] = 'sarhos';
-    }
+  if (o.sarhos && cards.length) {
+    // Orijinal oyundaki gibi kısıtlama yok: Başkan, Bombacı, Ajan, Casus ya da düz takım kartı olabilir
+    const idx = Math.floor(Math.random() * cards.length);
+    sober = cards[idx];
+    cards[idx] = 'sarhos';
   }
 
   return { cards, sober, blue, red };
@@ -943,7 +941,7 @@ setInterval(() => {
 const SETUP_LIST = [
   ['ajan', 'Ajanlar (Mavi & Kırmızı Ajan)'],
   ['casus', 'Casuslar (Mavi & Kırmızı Casus)'],
-  ['sarhos', 'Sarhoş (son turda ayılır)']
+  ['sarhos', 'Sarhoş (herhangi bir karakter, 3. turda ayılır)']
 ];
 
 function buildSetup() {
@@ -1016,8 +1014,7 @@ function updateSum(n) {
   } else {
     const pair = (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0);
     let t = pre + `${eff} Oyuncu · Mavi: ${r.blue + pair + 1} · Kırmızı: ${r.red + pair + 1}`;
-    if (r.sober) t += ' · Sarhoş var (3. turda ayılır)';
-    else if (opts.sarhos) t += ' · (düz kart yok, Sarhoş eklenmedi)';
+    if (r.sober) t += ' · Sarhoş var (3. turda ayılır, herhangi bir karakter olabilir)';
     s.textContent = t + note;
     s.style.color = '';
   }
