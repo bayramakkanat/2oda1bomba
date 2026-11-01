@@ -249,7 +249,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.2'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.3'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -737,7 +737,7 @@ function onC(m) {
     alarm(m.s, m.k);
     if (m.msg) ov(m.msg.split('\n')[0], m.msg.split('\n')[1] || '', 'Tamam');
   } else if (m.t === 'drunk') {
-    alarm('start', 'drunk');
+    // Ses: startRound zaten herkese 'start' melodisini çaldırıyor, burada tekrar çalınmaz (üst üste biniyordu)
     vib([200, 100, 200, 100, 400]);
     ov('AYILDIN!', 'Artık sarhoş değilsin: kartın gerçek karakterine döndü. Kartına basılı tutup bak.', 'Tamam');
   } else if (m.t === 'state') {
