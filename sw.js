@@ -5,7 +5,7 @@
    zayıf Wi-Fi ve mobil veri kopmalarında oyunun takılmadan açılmasını sağlar.
    ======================================================== */
 
-const CACHE_NAME = '2oda1bomba-v0.6.3';
+const CACHE_NAME = '2oda1bomba-v0.6.4';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,8 @@ const PRECACHE_ASSETS = [
   './cards/ajan_kirmizi.jpg',
   './cards/casus_mavi.jpg',
   './cards/casus_kirmizi.jpg',
+  './cards/doktor.jpg',
+  './cards/muhendis.jpg',
   './cards/takim_mavi.jpg',
   './cards/takim_kirmizi.jpg',
   './cards/sarhos.jpg'

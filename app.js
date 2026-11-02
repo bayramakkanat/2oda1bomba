@@ -11,9 +11,11 @@ const SHARE = {
   baskan: 'takim_mavi',
   casus_kirmizi: 'takim_mavi', // Kırmızı Casus: kartı mavi görünür, kırmızı için çalışır
   takim_mavi: 'takim_mavi',
+  doktor: 'takim_mavi',
   ajan_kirmizi: 'takim_kirmizi',
   bombaci: 'takim_kirmizi',
   casus_mavi: 'takim_kirmizi', // Mavi Casus: kartı kırmızı görünür, mavi için çalışır
+  muhendis: 'takim_kirmizi',
   takim_kirmizi: 'takim_kirmizi',
   sarhos: 'sarhos'
 };
@@ -65,10 +67,10 @@ function shuffle(a) {
 }
 
 /* ----- Deste Planlayıcı (Mavi ve Kırmızı her zaman eşit) -----
-   Başkan + Bombacı her zaman var. Ajan ve Casus çift olarak (1 Mavi + 1 Kırmızı) eklenir.
+   Başkan + Bombacı her zaman var. Ajan, Casus ve Doktor/Mühendis çift olarak (1 Mavi + 1 Kırmızı) eklenir.
    Oyun hep çift sayıda oyuncuyla oynanır: oyuncu sayısı tekse moderatör oyuna girmeden yönetir (deal()).
    Sarhoş, destedeki herhangi bir kartın (Başkan ve Bombacı dahil) yerine geçer; DRUNK_WAKE_ROUND. turda o karakteri alır. */
-const OPT_DEF = { ajan: true, casus: true, sarhos: true, blue: '', red: '' };
+const OPT_DEF = { ajan: true, casus: true, doktor: false, sarhos: true, blue: '', red: '' };
 
 function planDeck(n, o) {
   o = { ...OPT_DEF, ...(o || {}) };
@@ -76,10 +78,11 @@ function planDeck(n, o) {
   const d = ['baskan', 'bombaci'];
   if (o.ajan) d.push('ajan_mavi', 'ajan_kirmizi');
   if (o.casus) d.push('casus_mavi', 'casus_kirmizi');
+  if (o.doktor) d.push('doktor', 'muhendis');
 
   let rem = n - d.length;
   if (rem < 0) {
-    return { error: `${n} oyuncuya ${d.length} özel kart sığmaz. Ajan veya Casus çiftini kapatın.` };
+    return { error: `${n} oyuncuya ${d.length} özel kart sığmaz. Ajan, Casus veya Doktor/Mühendis çiftini kapatın.` };
   }
 
   const num = v => (v === '' || v == null ? null : Math.max(0, Math.floor(+v) || 0));
@@ -249,7 +252,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.3'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.4'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -837,6 +840,7 @@ window.alert = msg => gameAlert('Bilgilendirme', String(msg || ''));
 const CN = {
   baskan: 'Başkan', bombaci: 'Bombacı', ajan_mavi: 'Mavi Ajan', ajan_kirmizi: 'Kırmızı Ajan',
   casus_mavi: 'Mavi Casus', casus_kirmizi: 'Kırmızı Casus',
+  doktor: 'Doktor', muhendis: 'Mühendis',
   takim_mavi: 'Mavi Takım', takim_kirmizi: 'Kırmızı Takım', sarhos: 'Sarhoş'
 };
 const cardLabel = (c, drunk) => (drunk ? `Sarhoştu → ${CN[c] || c}` : (CN[c] || c));
@@ -1026,6 +1030,7 @@ setInterval(() => {
 const SETUP_LIST = [
   ['ajan', 'Ajanlar (Mavi & Kırmızı Ajan)'],
   ['casus', 'Casuslar (Mavi & Kırmızı Casus)'],
+  ['doktor', 'Doktor (Mavi) & Mühendis (Kırmızı)'],
   ['sarhos', 'Sarhoş (herhangi bir karakter, 3. turda ayılır)']
 ];
 
@@ -1097,7 +1102,7 @@ function updateSum(n) {
     s.textContent = pre + `${eff} Oyuncu · ⚠ ${r.error}`;
     s.style.color = '#ff6b6b';
   } else {
-    const pair = (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0);
+    const pair = (opts.ajan ? 1 : 0) + (opts.casus ? 1 : 0) + (opts.doktor ? 1 : 0);
     let t = pre + `${eff} Oyuncu · Mavi: ${r.blue + pair + 1} · Kırmızı: ${r.red + pair + 1}`;
     if (r.sober) t += ' · Sarhoş var (3. turda ayılır, herhangi bir karakter olabilir)';
     s.textContent = t + note;
