@@ -42,8 +42,8 @@ const ROUND_SECS_NORMAL = {
   5: [300, 240, 180, 120, 60]  // 5, 4, 3, 2, 1 dk
 };
 const ROUND_SECS_TEST = {
-  3: [15, 10, 5],
-  5: [15, 12, 10, 8, 5]
+  3: [30, 25, 20],
+  5: [30, 27, 24, 22, 20]
 };
 
 let SWAP_SECS = 45; // Rehine seçimi + oda değişimi süresi (saniye)
@@ -252,7 +252,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.5'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.6'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
