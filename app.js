@@ -70,7 +70,7 @@ function shuffle(a) {
    Başkan + Bombacı her zaman var. Ajan, Casus ve Doktor/Mühendis çift olarak (1 Mavi + 1 Kırmızı) eklenir.
    Oyun hep çift sayıda oyuncuyla oynanır: oyuncu sayısı tekse moderatör oyuna girmeden yönetir (deal()).
    Sarhoş, destedeki herhangi bir kartın (Başkan ve Bombacı dahil) yerine geçer; DRUNK_WAKE_ROUND. turda o karakteri alır. */
-const OPT_DEF = { ajan: true, casus: true, doktor: false, sarhos: true, blue: '', red: '' };
+const OPT_DEF = { ajan: true, casus: true, doktor: false, sarhos: false, blue: '', red: '' };
 
 function planDeck(n, o) {
   o = { ...OPT_DEF, ...(o || {}) };
@@ -252,7 +252,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.6'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.7'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -322,6 +322,7 @@ function hostInit(resume) {
     endAt: 0, test: !!$('tm').checked, result: null
   };
   applyTest(H.test);
+  if (!resume) resetDrunk();
   if (!resume && me.play) H.players.push({ pid: me.pid, name: me.name, self: true });
 
   openPeer('2r1b-' + code, () => {
@@ -594,6 +595,7 @@ function newGame() {
         me.play = true;
         save('2r1b_me', me);
       }
+      resetDrunk();
       lobbyAll();
       $('hostp').hidden = true;
     }
@@ -1037,7 +1039,8 @@ const SETUP_LIST = [
 function buildSetup() {
   const g = $('sg');
   if (g.children.length) return;
-  const o = { ...OPT_DEF, ...(LS('2r1b_opts') || {}) };
+  // Sarhoş güvenlik gereği her açılışta kapalı başlar (kayıtlı ayarı yok sayılır): unutulup bir sonraki oyuna taşınmasın
+  const o = { ...OPT_DEF, ...(LS('2r1b_opts') || {}), sarhos: false };
 
   const row = (t, el) => {
     const l = document.createElement('label'), s = document.createElement('span');
@@ -1079,6 +1082,14 @@ function readOpts() {
     o[e.dataset.k] = e.type === 'checkbox' ? e.checked : e.value;
   });
   return o;
+}
+
+// Yeni oyun başlarken Sarhoş işareti kapatılır: bilinçli olarak her oyunda yeniden işaretlenmelidir
+function resetDrunk() {
+  const c = document.querySelector('#sg [data-k=sarhos]');
+  if (!c || !c.checked) return;
+  c.checked = false;
+  save('2r1b_opts', readOpts());
 }
 
 function updateSum(n) {
@@ -1181,6 +1192,25 @@ $('bHome').onclick = () => {
     () => leaveToHome('Oyun kapatıldı.', true)
   );
 };
+
+/* ----- Nasıl Oynanır (ana menü ve lobide aynı metin) ----- */
+const HOW_HTML = `
+  <ol>
+    <li><b>Amaç.</b> <span class="hb">Mavi</span> takım: Başkan ile Bombacı oyun sonunda <b>farklı odalarda</b> olsun. <span class="hr">Kırmızı</span> takım: <b>aynı odada</b> olsun.</li>
+    <li><b>Telefonun.</b> Gizli kartın ve ortak sayaçtır. Karta basılı tuttuğunda kart açılır, bırakınca kapanır. Birine göstermen gerekirse:
+      <ul>
+        <li><b>Rengimi Göster</b> sadece takım rengini gösterir, rolünü açık etmez.</li>
+        <li><b>Kartımı Göster</b> tam kartı 5 saniye gösterir.</li>
+      </ul>
+    </li>
+    <li><b>Turlar.</b> Herkes başlangıç odasına geçer, moderatör turu başlatır. Sayaç tüm telefonlarda aynı anda geri sayar, süre bitince ses ve titreşim gelir.</li>
+    <li><b>Lider ve rehine.</b> Her odada bir lider seçilir (yüz yüze). Süre bitince lider, odasından rehineleri seçip karşı odaya gönderir. Lider rehine olamaz.</li>
+    <li><b>Ajan.</b> Kartını gösterip bir oyuncunun kartını görmek isteyebilir (turda bir kez).</li>
+    <li><b>Son tur.</b> Son rehineler de gönderilir, herkes bir araya toplanır ve kartlar açılır.</li>
+    <li><b>Kazanan.</b> Başkan ile Bombacı aynı odadaysa <span class="hr">Kırmızı</span>, farklı odalardaysa <span class="hb">Mavi</span> kazanır.</li>
+    <li><b>Sarhoş (varsa).</b> İlk iki tur kendi rolünü bilmez. 3. turun başında telefon titreyip gerçek rolünü söyler.</li>
+  </ol>`;
+document.querySelectorAll('.how-body').forEach(el => { el.innerHTML = HOW_HTML; });
 
 $('bk').src = 'cards/back.jpg';
 $('cover').style.backgroundImage = 'url(cards/back.jpg)';

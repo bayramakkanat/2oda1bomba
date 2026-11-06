@@ -573,6 +573,51 @@ details#su summary {
   margin: 6px 0;
 }
 
+/* Nasıl Oynanır paneli (ana menü ve lobi) */
+details.how {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+details.how summary {
+  font-weight: 700;
+  font-size: 14px;
+  color: #cbd5e1;
+  cursor: pointer;
+  outline: none;
+}
+
+.how-body {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+
+.how-body ol {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.how-body ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.how-body b { color: var(--fg); }
+.how-body .hb { color: #60a5fa; font-weight: 800; }
+.how-body .hr { color: #f87171; font-weight: 800; }
+
 /* ========================================================
    OYUN EKRANI & HUD
    ======================================================== */

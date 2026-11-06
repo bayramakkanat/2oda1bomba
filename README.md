@@ -1,14 +1,16 @@
-# 2 Oda 1 Bomba – Telefon Kart & Ortak Saat Uygulaması (v0.6.6 – Fiziksel Dostu, Gri Rol Yok)
+# 2 Oda 1 Bomba – Telefon Kart & Ortak Saat Uygulaması (v0.6.7 – Fiziksel Dostu, Gri Rol Yok)
 
 Bu uygulama, **Two Rooms and a Boom (2 Oda 1 Bomba)** oyununu ekrana boğmadan oynatmak için yapılmış bir yardımcıdır. Telefon sadece **cebindeki gizli kart** ve **odalar arasında ortak geri sayım saati** olarak çalışır. Lider seçimi, darbe girişimleri, rehine pazarlığı, Ajan sorguları ve oda değişimi tamamen yüz yüze, fiziksel olarak yapılır.
 
 **v0.4 değişikliği:** Gri roller (Stajyer, Maktül, Kumarbaz) oyundan çıkarıldı. Sadece **Sarhoş** kaldı.
 
-**v0.6.4 – v0.6.6 değişiklikleri:**
+**v0.6.4 – v0.6.7 değişiklikleri:**
 - **Doktor** (Mavi) ve **Mühendis** (Kırmızı) çifti eklendi. Lobideki karakter setinden açılıp kapatılır, varsayılan olarak kapalıdır.
 - Sarhoş ayılırken uyarı melodisi artık iki kez üst üste çalmaz; sadece titreşim ve "AYILDIN!" penceresi gelir.
 - Kartlardaki açıklama yazıları sadeleştirildi ve boyutları eşitlendi (Casuslar, düz Kırmızı Takım, Başkan, Bombacı, Mühendis, Kırmızı Ajan).
 - Test modu süreleri uzatıldı: 3 turlu oyunda 30 - 25 - 20 sn, 5 turlu oyunda 30 - 27 - 24 - 22 - 20 sn.
+- Ana menüye ve lobiye açılır kapanır **📖 Nasıl Oynanır?** paneli eklendi (ilk kez oynayanlar için kısa kurallar).
+- **Sarhoş** artık her açılışta ve her yeni oyunda kapalı başlar; işaretli kalarak bir sonraki oyuna taşınmaz, bilinçli olarak işaretlenmelidir.
 
 ---
 
@@ -37,7 +39,7 @@ Başkan + Bombacı her zaman vardır. **Ajanlar** (Mavi + Kırmızı) ve **Casus
 
 **Çift sayı kuralı:** Moderatör katılıyor ve sayı tekse, "Kartları Dağıt" derken moderatörün oyuna girmeden yönetmesi onaylanır (7 kişi → 6 oyuncu). Yeni oyunda moderatör tekrar oyuncu olarak eklenir. Moderatör zaten oynamıyorsa ve sayı tekse bir oyuncu daha katılmalı ya da biri çıkmalıdır. Böylece iki takım hep eşit kalır.
 
-**Sarhoş:** Orijinal oyundaki gibi destedeki **herhangi bir kartın** (Başkan, Bombacı, Ajan, Casus, Doktor, Mühendis ya da düz takım kartı) yerine geçer ve **3. turun başında** o karaktere döner (3 turluk oyunda 3. tur zaten son turdur, 5 turlu oyunda 3. turdan itibaren normal rolüyle oynar). Topluluk oyunu ve karakterleri öğrenene kadar Sarhoş işareti kapalı tutulabilir. Sarhoş, Başkan ya da Bombacı çıkarsa sonuç ekranı aydıktan sonraki karta göre Başkan ve Bombacı adını gösterir (en geç son turun başında aydığı için kural değişmez).
+**Sarhoş:** Orijinal oyundaki gibi destedeki **herhangi bir kartın** (Başkan, Bombacı, Ajan, Casus, Doktor, Mühendis ya da düz takım kartı) yerine geçer ve **3. turun başında** o karaktere döner (3 turluk oyunda 3. tur zaten son turdur, 5 turlu oyunda 3. turdan itibaren normal rolüyle oynar). Sarhoş işareti **her oyunda kapalı başlar**, kullanmak istersen lobide bilinçli olarak işaretlenir (unutulursa bir sonraki oyuna taşınmaz). İlk kez oynayan toplulukta karakterleri öğrenene kadar kapalı tutmak daha uygundur. Sarhoş, Başkan ya da Bombacı çıkarsa sonuç ekranı aydıktan sonraki karta göre Başkan ve Bombacı adını gösterir (en geç son turun başında aydığı için kural değişmez).
 
 **Sarhoş nasıl çalışır (fiziksel hisse yakın):**
 - İlk 2 tur boyunca kartı "SARHOŞ – ??? TAKIM" görünür, renk paylaşımında mor çıkar. Kendi rolünü bilmez.
@@ -94,6 +96,7 @@ Bu sürümde telefon çoğu zaman masada duracağı için:
 - **Bağlantı:** Tüm oyuncular ve moderatör aynı Cloudflare bulut aracısı üzerinden bağlanır (seçim gerekmez, aşağıdaki bölüme bakın).
 - **Test modu:** Süreler kısalır (3 turlu oyunda 30 - 25 - 20 sn, 5 turlu oyunda 30 - 27 - 24 - 22 - 20 sn), en az 4 oyuncuyla başlanır, lobide **+ Test Oyuncusu** düğmesi çıkar.
 - **Kart demosu:** Oyun kurmadan tüm kartları görüp basılı tutma, renk ve kart paylaşımını deneyebilirsin.
+- **Nasıl Oynanır:** Ana menüde ve lobide açılır kapanır panel; amacı, telefonun kullanımını, turları, rehine akışını ve kazanma kuralını kısaca anlatır.
 - **Karakter seti:** Lobide Ajan, Casus, Doktor/Mühendis ve Sarhoş açılıp kapatılır, özet satırı deste dağılımını canlı gösterir.
 - **Bağlantısı kopan oyuncu:** Tarayıcı verisi silinirse oyun başladıktan sonra da **eski adıyla** girerek koltuğuna dönebilir.
 
