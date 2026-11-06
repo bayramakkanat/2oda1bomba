@@ -252,7 +252,7 @@ function pingLoop(n) {
   pingT = setTimeout(() => pingLoop(n + 1), n < 8 ? 1000 : 10000); // başlangıçta sık, sonra seyrek ölçüm
 }
 
-const APP_VERSION = '0.6.7'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
+const APP_VERSION = '0.6.8'; // her yayında artırın: telefonda alt satırda görünen sürüm, en yeni dosyaların yüklenip yüklenmediğini gösterir
 
 const show = n => {
   ['home', 'lobby', 'game'].forEach(s => $(s).hidden = s !== n);
@@ -1193,24 +1193,75 @@ $('bHome').onclick = () => {
   );
 };
 
-/* ----- Nasıl Oynanır (ana menü ve lobide aynı metin) ----- */
-const HOW_HTML = `
-  <ol>
-    <li><b>Amaç.</b> <span class="hb">Mavi</span> takım: Başkan ile Bombacı oyun sonunda <b>farklı odalarda</b> olsun. <span class="hr">Kırmızı</span> takım: <b>aynı odada</b> olsun.</li>
-    <li><b>Telefonun.</b> Gizli kartın ve ortak sayaçtır. Karta basılı tuttuğunda kart açılır, bırakınca kapanır. Birine göstermen gerekirse:
-      <ul>
-        <li><b>Rengimi Göster</b> sadece takım rengini gösterir, rolünü açık etmez.</li>
-        <li><b>Kartımı Göster</b> tam kartı 5 saniye gösterir.</li>
-      </ul>
-    </li>
-    <li><b>Turlar.</b> Herkes başlangıç odasına geçer, moderatör turu başlatır. Sayaç tüm telefonlarda aynı anda geri sayar, süre bitince ses ve titreşim gelir.</li>
-    <li><b>Lider ve rehine.</b> Her odada bir lider seçilir (yüz yüze). Süre bitince lider, odasından rehineleri seçip karşı odaya gönderir. Lider rehine olamaz.</li>
-    <li><b>Ajan.</b> Kartını gösterip bir oyuncunun kartını görmek isteyebilir (turda bir kez).</li>
-    <li><b>Son tur.</b> Son rehineler de gönderilir, herkes bir araya toplanır ve kartlar açılır.</li>
-    <li><b>Kazanan.</b> Başkan ile Bombacı aynı odadaysa <span class="hr">Kırmızı</span>, farklı odalardaysa <span class="hb">Mavi</span> kazanır.</li>
-    <li><b>Sarhoş (varsa).</b> İlk iki tur kendi rolünü bilmez. 3. turun başında telefon titreyip gerçek rolünü söyler.</li>
-  </ol>`;
-document.querySelectorAll('.how-body').forEach(el => { el.innerHTML = HOW_HTML; });
+/* ----- Nasıl Oynanır penceresi (ana menü ve lobide aynı): sayfa uzamaz, 7 kısa sayfa halinde ilerler ----- */
+const HOW = [
+  { i: '🎯', t: 'Amaç', h: `
+    <p>Oyunda iki takım var: <span class="hb">Mavi</span> ve <span class="hr">Kırmızı</span>. Mavi takımın <b>Başkan</b>'ı, Kırmızı takımın <b>Bombacı</b>'sı var.</p>
+    <p>Oyun bittiğinde Başkan ile Bombacı <b>aynı odadaysa</b> bomba patlar ve <span class="hr">Kırmızı</span> kazanır. <b>Farklı odalardaysa</b> <span class="hb">Mavi</span> kazanır.</p>
+    <p>Herkes sadece kendi kartını bilir. Kimin hangi takımda olduğunu konuşarak ve birbirinizi sorgulayarak bulmaya çalışırsınız.</p>` },
+  { i: '📱', t: 'Telefonun', h: `
+    <p>Telefonun senin <b>gizli kartın</b> ve <b>ortak sayaç</b>. Kart ekranda kapalı durur. Görmek için karta <b>basılı tut</b>, bırakınca tekrar kapanır. Ekrana kimsenin bakmadığından emin ol.</p>
+    <p>Birine takımını göstermek istersen iki düğme var:</p>
+    <ul>
+      <li><b>Rengimi Göster (3 sn):</b> Sadece Mavi ya da Kırmızı olduğunu gösterir, rolünü açık etmez.</li>
+      <li><b>Kartımı Göster (5 sn):</b> Tam kartını gösterir. Sadece güvendiğin biriyle kullan.</li>
+    </ul>` },
+  { i: '⏱️', t: 'Turlar', h: `
+    <p>Oyun <b>3 turdur</b> (moderatör istersen 5 tur seçer). Başta herkes telefonunda yazan <b>A ya da B odasına</b> geçer.</p>
+    <p>Moderatör turu başlatınca <b>tüm telefonlarda aynı sayaç</b> geri saymaya başlar. Tur boyunca odandakilerle konuşur, renk ve kart paylaşımı yapar, kimin kim olduğunu anlamaya çalışırsın.</p>
+    <p>3 turlu oyunda süreler sırayla 3, 2 ve 1 dakikadır. Süre bitince telefon <b>ses çıkarır</b> (Android'de titrer de).</p>` },
+  { i: '🤝', t: 'Lider ve rehine', h: `
+    <p>Her odada bir <b>lider</b> bulunur. Lideri odadakiler <b>yüz yüze</b> konuşup seçer.</p>
+    <p>Süre bitince lider, kendi odasından <b>rehineleri</b> seçip karşı odaya gönderir. Lider kendini rehine olarak seçemez. 3 turlu oyunda ilk turda 3, sonra 2, en son 1 rehine gönderilir (küçük oyunlarda daha az olabilir).</p>
+    <p>Rehineler odalarını değiştirir. Herkes yerine geçince moderatör <b>yeni turu başlatır</b>. Rehine geçişi sırasında sayaç çalışmaz, acele etmenize gerek yok.</p>` },
+  { i: '🕵️', t: 'Roller', h: `
+    <ul>
+      <li><b>Başkan</b> (<span class="hb">Mavi</span>): Bombacı'dan uzak durmaya çalışır.</li>
+      <li><b>Bombacı</b> (<span class="hr">Kırmızı</span>): Başkan'la aynı odada olmaya çalışır.</li>
+      <li><b>Mavi / Kırmızı Takım:</b> Sıradan oyunculardır, kendi takımlarının hedefi için çalışır.</li>
+      <li><b>Ajan:</b> Her turda bir oyuncunun kartını görmek isteyebilir. Önce kendi kartını gösterip Ajan olduğunu kanıtlar.</li>
+      <li><b>Casus:</b> Kartı rakip takım gibi görünür ama asıl takımı için çalışır. Mavi Casus kırmızı, Kırmızı Casus mavi görünür.</li>
+    </ul>` },
+  { i: '⭐', t: 'Özel roller (varsa)', h: `
+    <ul>
+      <li><b>Doktor</b> (<span class="hb">Mavi</span>): Başkan'la kimliğini paylaşır.</li>
+      <li><b>Mühendis</b> (<span class="hr">Kırmızı</span>): Bombacı'ya kim olduğunu gösterir.</li>
+      <li><b>Sarhoş:</b> İlk iki tur kendi rolünü bilmez, kartında "Sarhoş" yazar ve renk paylaşımında mor görünür. 3. turun başında telefon uyarır ve gerçek rolü açılır.</li>
+    </ul>
+    <p>Bu roller her oyunda bulunmaz, moderatör lobide açıp kapatır.</p>` },
+  { i: '🏁', t: 'Oyun sonu', h: `
+    <p>Son tur bitince <b>son rehineler</b> de gönderilir ve herkes aynı salonda toplanır.</p>
+    <p>Moderatör sonuçları açar: herkesin kartı görünür ve roller listelenir.</p>
+    <p>Başkan ile Bombacı <b>aynı odadaysa</b> <span class="hr">Kırmızı</span>, <b>farklı odalardaysa</b> <span class="hb">Mavi</span> kazanır. Uygulama odaları takip etmez, kimin hangi odada olduğunu siz bilirsiniz.</p>` }
+];
+let howI = 0;
+function howShow(n) {
+  howI = Math.max(0, Math.min(HOW.length - 1, n));
+  const s = HOW[howI];
+  $('how-ico').textContent = s.i;
+  $('how-title').textContent = s.t;
+  $('how-text').innerHTML = s.h;
+  $('how-slide').scrollTop = 0;
+  $('how-step').textContent = `${howI + 1} / ${HOW.length}`;
+  $('how-dots').innerHTML = HOW.map((_, k) => `<i${k === howI ? ' class="on"' : ''}></i>`).join('');
+  $('how-prev').style.visibility = howI ? 'visible' : 'hidden';
+  $('how-next').textContent = howI === HOW.length - 1 ? 'Anladım ✓' : 'İleri →';
+}
+const howOpen = () => { howShow(0); $('how-ov').hidden = false; };
+const howClose = () => { $('how-ov').hidden = true; };
+$('bhow').onclick = howOpen;
+$('bhow2').onclick = howOpen;
+$('how-x').onclick = howClose;
+$('how-prev').onclick = () => howShow(howI - 1);
+$('how-next').onclick = () => (howI >= HOW.length - 1 ? howClose() : howShow(howI + 1));
+$('how-ov').onclick = e => { if (e.target === $('how-ov')) howClose(); };
+// Yana kaydırarak da sayfa değiştirilir
+let howX = 0;
+$('how-ov').addEventListener('touchstart', e => { howX = e.touches[0].clientX; }, { passive: true });
+$('how-ov').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - howX;
+  if (Math.abs(dx) > 60) howShow(howI + (dx < 0 ? 1 : -1));
+}, { passive: true });
 
 $('bk').src = 'cards/back.jpg';
 $('cover').style.backgroundImage = 'url(cards/back.jpg)';

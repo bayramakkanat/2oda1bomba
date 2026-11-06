@@ -73,13 +73,7 @@
           <button id="bh" class="ghost">Yeni Oyun Kur (Moderatör)</button>
           <button id="bdemo" class="ghost">Kart Demosu (Kartları İncele)</button>
         </div>
-      </div>
-
-      <div class="card-panel panel-secondary">
-        <details class="how">
-          <summary>📖 Nasıl Oynanır?</summary>
-          <div class="how-body"></div>
-        </details>
+        <button id="bhow" class="ghost how-btn" type="button">📖 Nasıl Oynanır?</button>
       </div>
 
       <p id="herr" class="err-msg"></p>
@@ -98,12 +92,7 @@
         <ul id="ll"></ul>
       </div>
 
-      <div class="card-panel panel-secondary">
-        <details class="how">
-          <summary>📖 Nasıl Oynanır?</summary>
-          <div class="how-body"></div>
-        </details>
-      </div>
+      <button id="bhow2" class="ghost how-btn" type="button">📖 Nasıl Oynanır?</button>
 
       <div id="hp" class="card-panel host-controls-card" hidden>
         <details id="su">
@@ -187,6 +176,26 @@
       <div class="ov-actions">
         <button id="ov-cancel" class="ghost ov-btn" hidden>Vazgeç</button>
         <button id="ok" class="btn-primary ov-btn">Tamam</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NASIL OYNANIR PENCERESİ (sayfa uzamaz, içerik pencerede sayfa sayfa ilerler) -->
+  <div id="how-ov" hidden>
+    <div class="how-box" role="dialog" aria-modal="true" aria-labelledby="how-title">
+      <div class="how-head">
+        <div id="how-step" class="how-step"></div>
+        <button id="how-x" class="ghost how-x" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <div id="how-slide" class="how-slide">
+        <div id="how-ico" class="how-ico"></div>
+        <div id="how-title" class="how-title"></div>
+        <div id="how-text" class="how-text"></div>
+      </div>
+      <div id="how-dots" class="how-dots"></div>
+      <div class="how-nav">
+        <button id="how-prev" class="ghost" type="button">← Geri</button>
+        <button id="how-next" class="btn-primary" type="button">İleri →</button>
       </div>
     </div>
   </div>

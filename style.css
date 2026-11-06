@@ -573,50 +573,113 @@ details#su summary {
   margin: 6px 0;
 }
 
-/* Nasıl Oynanır paneli (ana menü ve lobi) */
-details.how {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.2);
-}
-
-details.how summary {
-  font-weight: 700;
-  font-size: 14px;
-  color: #cbd5e1;
-  cursor: pointer;
-  outline: none;
-}
-
-.how-body {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+/* Nasıl Oynanır penceresi (ana menü ve lobi): sayfa uzamaz, içerik pencerenin içinde sayfa sayfa ilerler */
+.how-btn {
+  width: 100%;
   font-size: 13px;
-  line-height: 1.5;
+  padding: 11px 12px;
+}
+
+#how-ov {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 14, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 98;
+}
+
+.how-box {
+  background: #161c2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 36px);
+  max-height: calc(100dvh - 36px);
+  padding: 16px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  animation: modalPop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.how-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.how-step {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--fg-subtle);
+}
+
+.how-x {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 999px;
+}
+
+/* Sabit yükseklik: sayfalar arası geçişte pencere boyutu ve düğmeler yerinde kalır, uzun metin pencerenin içinde kayar */
+.how-slide {
+  height: min(54vh, 390px);
+  height: min(54dvh, 390px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  -webkit-overflow-scrolling: touch;
+}
+
+.how-ico { font-size: 34px; line-height: 1; }
+.how-title { font-size: 21px; font-weight: 900; color: #fff; }
+
+.how-text {
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--fg-muted);
 }
-
-.how-body ol {
-  margin: 0;
+.how-text p { margin: 0 0 10px; }
+.how-text ul {
+  margin: 4px 0 10px;
   padding-left: 18px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
 }
+.how-text b { color: var(--fg); }
+.how-text .hb { color: #60a5fa; font-weight: 800; }
+.how-text .hr { color: #f87171; font-weight: 800; }
 
-.how-body ul {
-  margin: 6px 0 0;
-  padding-left: 16px;
+.how-dots {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+}
+.how-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: all 0.2s ease;
+}
+.how-dots i.on {
+  width: 20px;
+  background: var(--blue);
 }
 
-.how-body b { color: var(--fg); }
-.how-body .hb { color: #60a5fa; font-weight: 800; }
-.how-body .hr { color: #f87171; font-weight: 800; }
+.how-nav {
+  display: flex;
+  gap: 10px;
+}
+.how-nav button { flex: 1; padding: 13px; }
 
 /* ========================================================
    OYUN EKRANI & HUD
