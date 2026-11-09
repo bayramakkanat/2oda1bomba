@@ -165,6 +165,24 @@ section {
   letter-spacing: 0.02em;
 }
 
+/* Topluluk rozeti (ana ekran) */
+.brand-community {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 999px;
+  text-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
+}
+
 /* ========================================================
    KART PANELLERİ (GLASSMORPHISM)
    ======================================================== */
