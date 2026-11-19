@@ -1357,6 +1357,35 @@ if (me) {
   }
 }
 
+/* ----- Uygulama içi tarayıcı (WhatsApp, Instagram vb.) uyarısı ----- */
+(function inAppBrowserNotice() {
+  const box = $('iab');
+  if (!box) return;
+
+  const ua = navigator.userAgent || '';
+  const standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (standalone) return; // Ana ekrana eklenmiş uygulama: uyarı gerekmez
+
+  const knownApps = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Snapchat|Twitter|MicroMessenger|TikTok|BytedanceWebview|Line\/|Telegram/i.test(ua);
+  const androidWebView = /Android/i.test(ua) && /;\s?wv\)/i.test(ua);
+  const iosWebView = /iPhone|iPad|iPod/i.test(ua) && /AppleWebKit/i.test(ua) && !/Safari\//i.test(ua);
+  if (!(knownApps || androidWebView || iosWebView)) return;
+
+  box.hidden = false;
+  $('iab-x').onclick = () => { box.hidden = true; };
+  $('iab-copy').onclick = async () => {
+    const btn = $('iab-copy');
+    const url = location.href.split('#')[0];
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = 'Kopyalandı ✓';
+    } catch (e) {
+      window.prompt('Linki kopyalayıp tarayıcınıza yapıştırın:', url);
+    }
+  };
+})();
+
 // PWA / Çevrimdışı Servis Çalışanı (Service Worker) kaydı
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
